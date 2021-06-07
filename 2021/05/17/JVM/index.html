@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="笔记,Java,JVM,Java虚拟机," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="JVMJVM基本原理1. java代码是怎样运行的为啥要虚拟机 C++可直接转化为汇编语言，直接在cpu上跑，但java语言的抽象程度更高一些，显然不现实 目前主流的思路：为java专门设计一个虚拟机，然后通过编译器将java程序转化为该虚拟机所能实现的指令序列（类似cpu指令集吧），也称为java字节码（java字节码指令的操作码被固定为一个字节） Java 虚拟机可以由硬件实现 ，但更为常见的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="拆解Java虚拟机">
+<meta property="og:url" content="http://example.com/2021/05/17/JVM/index.html">
+<meta property="og:site_name" content="XSY的窝">
+<meta property="og:description" content="JVMJVM基本原理1. java代码是怎样运行的为啥要虚拟机 C++可直接转化为汇编语言，直接在cpu上跑，但java语言的抽象程度更高一些，显然不现实 目前主流的思路：为java专门设计一个虚拟机，然后通过编译器将java程序转化为该虚拟机所能实现的指令序列（类似cpu指令集吧），也称为java字节码（java字节码指令的操作码被固定为一个字节） Java 虚拟机可以由硬件实现 ，但更为常见的">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/jvm1-1623024819696.png">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/jvm2-1623024819696.png">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/Users/h/Desktop/JVM/image-20210527101124712.png">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/image-20210527103450473.png">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/v2-38552a00d9bfb53f0c780e26a0d4b078_720w.jpg">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/%E4%B8%8B%E8%BD%BD.png">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/image-20210530113828061.png">
+<meta property="og:image" content="http://example.com/2021/05/17/JVM/image-20210530113852904.png">
+<meta property="article:published_time" content="2021-05-17T06:01:56.000Z">
+<meta property="article:modified_time" content="2021-06-07T00:14:23.953Z">
+<meta property="article:author" content="XSY">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="JVM">
+<meta property="article:tag" content="Java虚拟机">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/05/17/JVM/jvm1-1623024819696.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://example.com/2021/05/17/JVM/"/>
+
+
+
+
+
+  <title>拆解Java虚拟机 | XSY的窝</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">XSY的窝</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">3190100646@zju.edu.cn</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/05/17/JVM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="XSY的窝">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">拆解Java虚拟机</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-05-17T14:01:56+08:00">
+                2021-05-17
+              </time>
+            
+
+            
+              <span class="post-meta-divider">|</span>
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-check-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">更新于&#58;</span>
+              
+              <time title="更新于" itemprop="dateModified" datetime="2021-06-07T08:14:23+08:00">
+                2021-06-07
+              </time>
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CS/" itemprop="url" rel="index">
+                    <span itemprop="name">CS</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CS/%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index">
+                    <span itemprop="name">笔记</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="JVM"><a href="#JVM" class="headerlink" title="JVM"></a>JVM</h1><h2 id="JVM基本原理"><a href="#JVM基本原理" class="headerlink" title="JVM基本原理"></a>JVM基本原理</h2><h3 id="1-java代码是怎样运行的"><a href="#1-java代码是怎样运行的" class="headerlink" title="1. java代码是怎样运行的"></a>1. java代码是怎样运行的</h3><h4 id="为啥要虚拟机"><a href="#为啥要虚拟机" class="headerlink" title="为啥要虚拟机"></a>为啥要虚拟机</h4><ol>
+<li>C++可直接转化为汇编语言，直接在cpu上跑，但java语言的抽象程度更高一些，显然不现实</li>
+<li>目前主流的思路：为java专门设计一个虚拟机，然后通过编译器将java程序转化为该虚拟机所能实现的指令序列（类似cpu指令集吧），也称为java字节码（java字节码指令的操作码被固定为一个字节）</li>
+<li>Java 虚拟机可以由硬件实现 ，但更为常见的是在各个现有平台（如 Windows_x64、Linux_aarch64）上提供软件实现。“一次编写，到处运行”。</li>
+<li>虚拟机另外一个好处是它带来了一个托管环境（Managed Runtime）。这个托管环境能够代替我们处理一些代码中冗长而且容易出错的部分。其中最广为人知的当属自动内存管理与垃圾回收，这部分内容甚至催生了一波垃圾回收调优的业务。</li>
+</ol>
+<h4 id="具体如何运行"><a href="#具体如何运行" class="headerlink" title="具体如何运行"></a>具体如何运行</h4><p>HotSpot为例</p>
+<ol>
+<li>虚拟机执行 Java 代码首先需要将它编译而成的 class 文件加载到 Java 虚拟机中。加载后的 Java 类会被存放于方法区（Method Area）中。实际运行时，虚拟机会执行方法区内的代码。</li>
+<li>和x86相同，Java 虚拟机也在内存中划分出堆和栈来存储运行时数据。Java 虚拟机会将栈细分为面向 Java 方法的 Java 方法栈，面向本地方法（用 C++ 写的 native 方法）的本地方法栈，以及存放各个线程执行位置的 PC 寄存器</li>
+</ol>
+<p><img src="/2021/05/17/JVM/jvm1-1623024819696.png" alt="jvm1"></p>
+<ol start="3">
+<li>在 HotSpot 里面，上述翻译过程有两种形式：第一种是解释执行，即逐条将字节码翻译成机器码并执行；第二种是即时编译（Just-In-Time compilation，JIT），即将一个方法中包含的所有字节码编译成机器码后再执行。</li>
+</ol>
+<p><img src="/2021/05/17/JVM/jvm2-1623024819696.png" alt="jvm2"></p>
+<p>​    前者的优势在于无需等待编译</p>
+<p>​    后者的优势在于实际运行速度更快，即进行了优化</p>
+<p>​    HotSpot 默认采用混合模式，综合了解释执行和即时编译两者的优点。它会先解释执行字节码，而后将其中反复执行的热点代码，以方法为单位进行即时编译。</p>
+<ol start="4">
+<li>Java 虚拟机将运行时内存区域划分为<strong>五个部分，分别为方法区、堆、PC 寄存器、Java 方法栈和本地方法栈。</strong>Java 程序编译而成的 class 文件，需要先加载至方法区中，方能在 Java 虚拟机中运行。</li>
+</ol>
+<h4 id="jvm的运行效率"><a href="#jvm的运行效率" class="headerlink" title="jvm的运行效率"></a>jvm的运行效率</h4><ol>
+<li>即时编译建立在程序符合二八定律的假设上，也就是百分之二十的代码占据了百分之八十的计算资源。</li>
+<li>为了满足不同用户场景的需要，HotSpot 内置了多个即时编译器：C1、C2 和 Graal。Graal 是 Java 10 正式引入的实验性即时编译器。</li>
+<li><strong>之所以引入多个即时编译器，是为了在编译时间和生成代码的执行效率之间进行取舍。</strong>C1 又叫做 Client 编译器，面向的是对启动性能有要求的客户端 GUI 程序，采用的优化手段相对简单，因此编译时间较短。</li>
+<li>C2 又叫做 Server 编译器，面向的是对峰值性能有要求的服务器端程序，采用的优化手段相对复杂，因此编译时间较长，但同时生成代码的执行效率较高。</li>
+<li>从 Java 7 开始，HotSpot 默认采用分层编译的方式：热点方法首先会被 C1 编译，而后热点方法中的热点会进一步被 C2 编译。</li>
+</ol>
+<h3 id="java基本类型"><a href="#java基本类型" class="headerlink" title="java基本类型"></a>java基本类型</h3><ol>
+<li>java引入了8个基本类型来支持数值计算，使用基本类型能够在执行效率以及内存使用两方面提升软件性能。</li>
+</ol>
+<h4 id="jvm中的boolean类型"><a href="#jvm中的boolean类型" class="headerlink" title="jvm中的boolean类型"></a>jvm中的boolean类型</h4><ol>
+<li>```java<br>public class Foo {<br>  public static void main(String[] args) {<pre><code>boolean 吃过饭没 = 2; // 直接编译的话 javac 会报错
+if (吃过饭没) System.out.println(&quot; 吃了 &quot;);
+if (true == 吃过饭没) System.out.println(&quot; 真吃了 &quot;);
+</code></pre>
+  }<br>}<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">2. 在 Java 虚拟机规范中，boolean 类型则被映射成 int 类型。具体来说，“true”被映射为整数 1，而“false”被映射为整数 0。这个编码规则约束了 Java 字节码的具体实现。上面的代码是直接对字节码进行修改，绕开编译器。</span><br><span class="line"></span><br><span class="line">3. 前一个判断，是比较变量和0，后一个是比较变量和1</span><br><span class="line"></span><br><span class="line">4. 那改为3呢？第二个就会执行了，**说明boolean的掩码处理是取低位的最后一位**（当然直接改会报错，需要直接修改字节码）</span><br><span class="line"></span><br><span class="line">5. 在编译后，字节码中不会有boolean的痕迹，也就是说编译器要保证boolean变量的值为0、1.</span><br><span class="line"></span><br><span class="line">#### java的基本类型</span><br><span class="line"></span><br><span class="line">![java基本类型](JVM/java基本类型-1623024819697.png)</span><br><span class="line"></span><br><span class="line">1. Java 的浮点类型采用 IEEE 754 浮点数格式。以 float 为例，浮点类型通常有两个 0，+0.0F 以及 -0.0F。前者在 Java 里是 0，后者是符号位为 1、其他位均为 0 的浮点数，在内存中等同于十六进制整数 0x8000000（即 -0.0F 可通过 Float.intBitsToFloat(0x8000000) 求得）。尽管它们的内存数值不同，**但是在 Java 中 +0.0F == -0.0F 会返回真。**</span><br><span class="line"></span><br><span class="line">2. 在有了 +0.0F 和 -0.0F 这两个定义后，我们便可以定义浮点数中的正无穷及负无穷。**正无穷就是任意正浮点数（不包括 +0.0F）除以 +0.0F 得到的值，而负无穷是任意正浮点数除以 -0.0F 得到的值。**在 Java 中，正无穷和负无穷是有确切的值，在内存中分别等同于十六进制整数 0x7F800000 和 0xFF800000。</span><br><span class="line"></span><br><span class="line">3. [0x7F800001, 0x7FFFFFFF] 和 [0xFF800001, 0xFFFFFFFF] 对应的都是 NaN。当然，一般我们计算得出的 NaN，比如说通过 +0.0F/+0.0F，在内存中应为 0x7FC00000。**这个数值，我们称之为标准的 NaN，而其他的我们称之为不标准的 NaN。**</span><br><span class="line"></span><br><span class="line">   **NaN 有一个有趣的特性：除了“!=”始终返回 true 之外，所有其他比较结果都会返回 false。**</span><br><span class="line"></span><br><span class="line">#### Java 基本类型的大小</span><br><span class="line"></span><br><span class="line">1. Java 虚拟机每调用一个 Java 方法，便会创建一个栈帧。为了方便理解，这里我只讨论供解释器使用的解释栈帧（interpreted frame）。</span><br><span class="line"></span><br><span class="line">2. jvm解释栈帧的局部变量区，等价于一个数组，除了 long、double 值需要用两个数组单元，其他基本类型以及引用类型的值均占用一个。会包含this自引用和输入参数</span><br><span class="line"></span><br><span class="line">   **也就是说，boolen、byte、char、short空间上和int相同。这种情况只出现在解释栈帧中，在堆的字段或数组元素上不会出现，和其值域相吻合**</span><br><span class="line"></span><br><span class="line">   将int赋值给这些元素时高二字节就被截断了</span><br><span class="line"></span><br><span class="line">3. boolean 字段和 boolean 数组则比较特殊。在 HotSpot 中，boolean 字段占用一字节，而 boolean 数组则直接用 byte 数组来实现。为了保证堆中的 boolean 值是合法的（即要么0要么1），HotSpot 在存储时显式地进行掩码操作，也就是说，只取最后一位的值存入 boolean 字段或数组中。</span><br><span class="line"></span><br><span class="line">4. 加载：也就是说，我们需要将堆中的 **boolean、byte、char 以及 short** 加载到**操作数栈**上，而后将栈上的值当成 int 类型来运算。（此时的堆中这些数据类型都占2个字节）</span><br><span class="line"></span><br><span class="line">   零扩展：无符号数，高位补零，byte、short，非负数补0，否则补1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">### 3. jvm是如何加载Java类的</span><br><span class="line"></span><br><span class="line">1. 类型分为两大类：基本类型和引用类型</span><br><span class="line">2. 引用类型：类、接口、数组类、泛型参数（在编译中被擦除），实际只有前三种</span><br><span class="line">3. 类、接口、数组类中，数组类由jvm直接生成，前两种有对应的字节流</span><br><span class="line"></span><br><span class="line">#### 加载</span><br><span class="line"></span><br><span class="line">1. 是指查找字节流，并且据此创建类的过程。对于数组类，直接由JVM生成，而其他类需要类加载器来完成查找字节流的过程</span><br><span class="line"></span><br><span class="line">2. 类加载器，很多，共同的祖师爷——**启动类加载器bootstrap class loader**（c++实现，没有对应java对象，java中只能用null来指代）</span><br><span class="line"></span><br><span class="line">3. 其他的类加载器都是 java.lang.ClassLoader 的**子类**，这些类加载器需要先由另一个类加载器，比如说启动类加载器，加载至 Java 虚拟机中，方能执行类加载。</span><br><span class="line"></span><br><span class="line">   **双亲委派模型**：一个类加载器接收到加载请求时，会先将请求转发给父类加载器，父类加载器没有找到所请求的类的情况下，类加载器才会尝试去加载</span><br><span class="line"></span><br><span class="line">4. java9之前，**启动类加载器**负责最基础，最重要的类，另外两个重要的类加载器是**扩展类加载器（extension class loader）和应用类加载器（application class loader）**，均由 Java 核心类库提供。</span><br><span class="line"></span><br><span class="line">5. 拓展类加载器的父类是**启动类加载器**，负责加载相对次要、但通用的类</span><br><span class="line"></span><br><span class="line">6. 应用类加载器的父类是**拓展类加载器**，负责加载应用程序路径下的类</span><br><span class="line"></span><br><span class="line">   &gt; Java 9 引入了模块系统，并且略微更改了上述的类加载器[1](https://docs.oracle.com/javase/9/migrate/toc.htm#JSMIG-GUID-A868D0B9-026F-4D46-B979-901834343F9E)。扩展类加载器被改名为平台类加载器（platform class loader）。Java SE 中除了少数几个关键模块，比如说 java.base 是由启动类加载器加载之外，其他的模块均由平台类加载器所加载。</span><br><span class="line">   &gt;</span><br><span class="line">   &gt; </span><br><span class="line">   &gt;</span><br><span class="line">   &gt; 在 Java 虚拟机中，类的唯一性是由**类加载器实例**以及**类的全名**一同确定的。即便是同一串字节流，经由不同的类加载器加载，也会得到两个不同的类。在大型应用中，我们往往借助这一特性，来运行同一个类的不同版本。</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">#### 链接</span><br><span class="line"></span><br><span class="line">1. 是指将创建成的类合并至java虚拟机中，使之能够执行的过程，可分为验证、准备以及解析三个阶段</span><br><span class="line"></span><br><span class="line">2. 验证：确保加载类满足JVM的约束条件</span><br><span class="line"></span><br><span class="line">3. 准备：为被加载类的静态字段分配内存。**静态字段的具体初始化会在稍后的初始化阶段中**进行</span><br><span class="line"></span><br><span class="line">   部分JVM还会在此阶段构造其他跟类层次相关的数据结构，比如用来实现虚方法的动态绑定的放发表</span><br><span class="line"></span><br><span class="line">   在class文件被加载至JVM前，这个类无法知道其他类及其方法、字段对应的具体地址，甚至不知道自己的方法、字段的地址，Java编译器会生成一符号引用</span><br><span class="line"></span><br><span class="line">   **例如对于一个方法调用，编译器会生成一个包含目标方法所在类的名字、目标方法的名字、接受参数类型以及返回值类型的符号引用，来指代所要调用的方法**</span><br><span class="line"></span><br><span class="line">4. 解析：将符号应用解析成为实际引用。如果符号引用指向一个未被加载的类，或者未被加载类的字段或方法，那么解析将触发这个类的加载（但未必触发这个类的链接以及初始化。）</span><br><span class="line"></span><br><span class="line">&gt; Java 虚拟机规范并没有要求在链接过程中完成解析。它仅规定了：如果某些字节码使用了符号引用，那么在执行这些字节码之前，需要完成对这些符号引用的解析。</span><br><span class="line"></span><br><span class="line">#### 初始化</span><br><span class="line"></span><br><span class="line">1. 如果直接赋值的静态字段被 final 所修饰，并且它的类型是**基本类型或字符串**时，那么该字段便会被 **Java 编译器标记成常量值（ConstantValue）**，其初始化直接由 Java 虚拟机完成。除此之外的直接赋值操作，以及所有静态代码块中的代码，则会被 Java 编译器置于同一方法中，并把它命名为 &lt; clinit &gt;。</span><br><span class="line">2. 触发情况：</span><br><span class="line">   1. 当虚拟机启动时，初始化用户指定的主类；</span><br><span class="line">   2. 当遇到用以新建目标类实例的 new 指令时，初始化 new 指令的目标类；</span><br><span class="line">   3. 当遇到调用静态方法的指令时，初始化该静态方法所在的类；</span><br><span class="line">   4. 当遇到访问静态字段的指令时，初始化该静态字段所在的类；</span><br><span class="line">   5. 子类的初始化会触发父类的初始化；</span><br><span class="line">   6. 如果一个接口定义了 default 方法，那么直接实现或者间接实现该接口的类的初始化，会触发该接口的初始化；</span><br><span class="line">   7. 使用反射 API 对某个类进行反射调用时，初始化这个类；</span><br><span class="line">   8. 当初次调用 MethodHandle 实例时，初始化该 MethodHandle 指向的方法所在的类</span><br><span class="line"></span><br><span class="line">```java</span><br><span class="line">public class Singleton &#123;</span><br><span class="line">    private Singleton() &#123;&#125;</span><br><span class="line">    private static class LazyHolder &#123;</span><br><span class="line">        static final Singleton INSTANCE = new Singleton();</span><br><span class="line">        static &#123;</span><br><span class="line">            System.out.println(&quot;LazyHolder.&lt;clinit&gt;&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    public static Object getInstance(boolean flag) &#123;</span><br><span class="line">        if (flag) return new LazyHolder[2]; //会加载LazyHolder但没有使用所以不会链接也不会初始化</span><br><span class="line">        return LazyHolder.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        getInstance(true);</span><br><span class="line">        System.out.println(&quot;----&quot;);</span><br><span class="line">        getInstance(false);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="4-JVM是如何执行方法调用的—1"><a href="#4-JVM是如何执行方法调用的—1" class="headerlink" title="4 JVM是如何执行方法调用的—1"></a>4 JVM是如何执行方法调用的—1</h3><h4 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h4><h5 id="重载"><a href="#重载" class="headerlink" title="重载"></a>重载</h5><p>首先要搞明白重载和重写，在 Java 程序里，如果同一个类中出现多个名字相同，并且参数类型相同的方法，那么它无法通过编译。也就是说，在正常情况下，如果我们想要在同一个类中定义名字相同的方法，那么它们的参数类型必须不同。这些方法之间的关系，我们称之为重载。</p>
+<p>重载的方法在编译过程中即可完成识别。具体到每一个方法调用，Java 编译器会根据所传入参数的声明类型（注意与实际类型区分）来选取重载方法。选取的过程共分为三个阶段：</p>
+<ol>
+<li>在不考虑对基本类型自动装拆箱（auto-boxing，auto-unboxing），以及可变长参数的情况下选取重载方法；</li>
+<li>如果在第 1 个阶段中没有找到适配的方法，那么在<strong>允许自动装拆箱，但不允许可变长参数</strong>的情况下选取重载方法；</li>
+<li>如果在第 2 个阶段中没有找到适配的方法，那么在<strong>允许自动装拆箱以及可变长参数</strong>的情况下选取重载方法。</li>
+</ol>
+<p>如果 Java 编译器在同一个阶段中找到了多个适配的方法，那么它会在其中选择一个最为贴切的，而决定贴切程度的一个<strong>关键就是形式参数类型的继承关系</strong>——相同情况下，子类更贴切。</p>
+<p>除了同一个类中的方法，重载也可以作用于这个类所继承而来的方法。也就是说，如果子类定义了与父类中非私有方法同名的方法，而且这两个方法的参数类型不同，那么在子类中，这两个方法同样构成了重载。</p>
+<h5 id="重写"><a href="#重写" class="headerlink" title="重写"></a>重写</h5><p>如果子类定义了与父类中非私有方法同名的方法，而且这两个方法的参数类型相同，那么这两个方法：</p>
+<ol>
+<li>这两个方法都是静态的，那么子类中的方法隐藏了父类中的方法</li>
+<li>如果这两个方法都不是静态的，且都不是私有的，那么子类的方法重写了父类中的方法。</li>
+</ol>
+<h4 id="静态绑定和动态绑定"><a href="#静态绑定和动态绑定" class="headerlink" title="静态绑定和动态绑定"></a>静态绑定和动态绑定</h4><p><strong>Java 虚拟机</strong>识别方法的关键在于类名、方法名以及方法描述符（method descriptor）。方法描述符，它是由方法的参数类型以及<strong>返回类型</strong>所构成。在同一个类中，如果同时出现多个名字相同且描述符也相同的方法，那么 Java 虚拟机会在类的验证阶段报错。</p>
+<p>Java 虚拟机与 Java 语言不同，它并不限制名字与参数类型相同，但<strong>返回类型不同</strong>的方法出现在同一个类中，对于调用这些方法的字节码来说，由于字节码所附带的方法描述符包含了返回类型，因此 Java 虚拟机能够准确地识别目标方法。</p>
+<p>之前我一直无法理解，照理说，当我们写完代码编译完后，所调用的方法应该已经确定了啊，但实际当然不是这样。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> 客户 </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">boolean</span> <span class="title">isVIP</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">class</span> 商户 </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">double</span> 折后价格 (<span class="keyword">double</span> 原价, 客户 某客户) &#123;</span><br><span class="line">    <span class="keyword">return</span> 原价 * <span class="number">0.8d</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">class</span> 奸商 <span class="keyword">extends</span> 商户 </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">double</span> 折后价格 (<span class="keyword">double</span> 原价, 客户 某客户) &#123;</span><br><span class="line">    <span class="keyword">if</span> (某客户.isVIP()) &#123;                         <span class="comment">// invokeinterface      </span></span><br><span class="line">      <span class="keyword">return</span> 原价 * 价格歧视 ();                    <span class="comment">// invokestatic</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">super</span>. 折后价格 (原价, 某客户);          <span class="comment">// invokespecial</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">double</span> 价格歧视 () &#123;</span><br><span class="line">    <span class="comment">// 咱们的杀熟算法太粗暴了，应该将客户城市作为随机数生成器的种子。</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> Random()                          <span class="comment">// invokespecial</span></span><br><span class="line">           .nextDouble()                         <span class="comment">// invokevirtual</span></span><br><span class="line">           + <span class="number">0.8d</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>例如上面，而客户的类型都是随机生成的，编译器在过程中就要相应做出不同的选择。</p>
+<p>还有下面：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">如下Java代码：</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> hr.test;</span><br><span class="line"><span class="comment">//被调用的父类</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Father</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">f1</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;father-f1()&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">f1</span><span class="params">(<span class="keyword">int</span> i)</span></span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;father-f1()  para-int &quot;</span>+i);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//被调用的子类</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Son</span> <span class="keyword">extends</span> <span class="title">Father</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">f1</span><span class="params">()</span></span>&#123; <span class="comment">//覆盖父类的方法</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Son-f1()&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">f1</span><span class="params">(<span class="keyword">char</span> c)</span></span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Son-s1() para-char &quot;</span>+c);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//调用方法</span></span><br><span class="line"><span class="keyword">import</span> hr.test.*;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AutoCall</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">        Father father=<span class="keyword">new</span> Son(); <span class="comment">//多态</span></span><br><span class="line">        father.f1(); <span class="comment">//打印结果： Son-f1()</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="桥接"><a href="#桥接" class="headerlink" title="桥接"></a>桥接</h5><p>对于 Java 语言中重写而 Java 虚拟机中非重写的情况，编译器会通过生成<strong>桥接方法</strong>来实现 Java 中的重写语义。</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/mhmyqn/article/details/47342577">https://blog.csdn.net/mhmyqn/article/details/47342577</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/jiaobuchong/article/details/83722193">https://blog.csdn.net/jiaobuchong/article/details/83722193</a></p>
+<p><strong>对重载方法的区分在编译阶段已经完成，我们可以认为 Java 虚拟机不存在重载这一概念。</strong>（直接由参数区分）</p>
+<p>因此，在某些文章中，重载也被称为静态绑定（static binding），或者编译时多态（compile-time polymorphism）；而重写则被称为动态绑定（dynamic binding）。</p>
+<blockquote>
+<p>这个说法在 Java 虚拟机语境下并非完全正确。这是因为某个类中的重载方法可能被它的子类所重写，因此 Java 编译器会将所有对非私有实例方法的调用编译为需要动态绑定的类型。</p>
+</blockquote>
+<h4 id="调用指令的符号引用"><a href="#调用指令的符号引用" class="headerlink" title="调用指令的符号引用"></a>调用指令的符号引用</h4><p>在编译过程中，我们并不知道目标方法的具体内存地址。因此，Java 编译器会暂时用符号引用来表示该目标方法。这一符号引用包括目标方法所在的类或接口的名字，以及目标方法的方法名和方法描述符。Java 虚拟机需要解析这些符号引用，并替换为实际引用。</p>
+<p>对于非接口符号引用，假定该符号引用所指向的类为 C，则 Java 虚拟机会按照如下步骤进行查找。</p>
+<ol>
+<li>在 C 中查找符合名字及描述符的方法。</li>
+<li>如果没有找到，在 C 的父类中继续搜索，直至 Object 类。</li>
+<li>如果没有找到，在 C 所直接实现或间接实现的接口中搜索，这一步搜索得到的目标方法必须是非私有、非静态的。并且，如果目标方法在间接实现的接口中，则需满足 C 与该接口之间没有其他符合条件的目标方法。如果有多个符合条件的目标方法，则任意返回其中一个。</li>
+</ol>
+<p>从这个解析算法可以看出，<strong>静态方法也可以通过子类来调用</strong>。此外，<strong>子类的静态方法会隐藏（注意与重写区分）父类中的同名、同描述符的静态方法</strong>。</p>
+<p>对于接口符号引用，假定该符号引用所指向的接口为 I，则 Java 虚拟机会按照如下步骤进行查找。</p>
+<ol>
+<li>在 I 中查找符合名字及描述符的方法。</li>
+<li>如果没有找到，在 Object 类中的公有实例方法中搜索。</li>
+<li>如果没有找到，则在 I 的超接口中搜索。这一步的搜索结果的要求与非接口符号引用步骤 3 的要求一致。</li>
+</ol>
+<h3 id="5-JVM是如何执行方法调用的—2"><a href="#5-JVM是如何执行方法调用的—2" class="headerlink" title="5 JVM是如何执行方法调用的—2"></a>5 JVM是如何执行方法调用的—2</h3><p>虚方法调用的实现</p>
+<p>绝大多数情况下都是动态绑定</p>
+<h4 id="方法表"><a href="#方法表" class="headerlink" title="方法表"></a>方法表</h4><p>方法表。类加载的准备阶段，除了为静态字段分配内存之外，还会构造与该类相关联的方法表。</p>
+<p>方法表本质上是一个数组，每个数组元素指向一个当前类及其祖先类中非私有的实例方法。</p>
+<p>这些方法可能是具体的、可执行的方法，也可能是没有相应字节码的抽象方法。方法表满足两个特质：</p>
+<ol>
+<li>其一，子类方法表中<strong>包含</strong>父类方法表中的所有方法；</li>
+<li>其二，子类方法在方法表中的索引值，与它所重写的父类方法的索引值<strong>相同</strong></li>
+</ol>
+<p>对于静态绑定的方法调用，实际引用将指向具体的目标方法。对于动态绑定的方法调用，实际引用则是方法表的索引值（实际上并不仅是索引值）。</p>
+<p>在执行过程中，Java 虚拟机获取调用者的实际类型，并在该实际类型的虚方法表中，根据索引值获得目标方法。这个过程便是动态绑定。</p>
+<blockquote>
+<p>这里，Java 虚拟机的工作可以想象为导航员。每当来了一个乘客需要出境，导航员会先问是中国人还是外国人（获取动态类型），然后翻出中国人 / 外国人对应的小册子（获取动态类型的方法表），小册子的第 1 页便写着应该到哪条通道办理出境手续（用 1 作为索引来查找方法表所对应的目标方法）。</p>
+</blockquote>
+<h4 id="内联缓存"><a href="#内联缓存" class="headerlink" title="内联缓存"></a>内联缓存</h4><p>内联缓存是一种加快动态绑定的优化技术。它能够缓存虚方法调用中调用者的动态类型，以及该类型所对应的目标方法。在之后的执行过程中，如果碰到已缓存的类型，内联缓存便会直接调用该类型所对应的目标方法。如果没有碰到已缓存的类型，内联缓存则会退化至使用基于方法表的动态绑定。</p>
+<blockquote>
+<p>在我们的例子中，这相当于导航员记住了上一个出境乘客的国籍和对应的通道，例如中国人，走了左边通道出境。那么下一个乘客想要出境的时候，导航员会先问是不是中国人，是的话就走左边通道。如果不是的话，只好拿出外国人的小册子，翻到第 1 页，再告知查询结果：右边。</p>
+</blockquote>
+<p>当内联缓存没有命中的情况下，Java 虚拟机需要重新使用方法表进行动态绑定。对于内联缓存中的内容，我们有两种选择。</p>
+<ol>
+<li><p><strong>替换单态内联缓存中的纪录</strong>。这种做法就好比 CPU 中的数据缓存，它对数据的局部性有要求，即在替换内联缓存之后的一段时间内，方法调用的调用者的动态类型应当保持一致，从而能够有效地利用内联缓存。</p>
+<p>因此，在<strong>最坏情况</strong>下，我们用两种不同类型的调用者，轮流执行该方法调用，那么每次进行方法调用都将替换内联缓存。也就是说，<strong>只有写缓存的额外开销，而没有用缓存的性能提升</strong>。</p>
+</li>
+</ol>
+<blockquote>
+<p>具体到我们的例子，如果来了一队乘客，其中外国人和中国人依次隔开，那么在重复使用的单态内联缓存中，导航员需要反复记住上个出境的乘客，而且记住的信息在处理下一乘客时又会被替换掉</p>
+</blockquote>
+<ol start="2">
+<li><strong>劣化为超多态状态</strong>。这也是 Java 虚拟机的具体实现方式。处于这种状态下的内联缓存，实际上放弃了优化的机会。它将直接访问方法表，来动态绑定目标方法。与替换内联缓存纪录的做法相比，它牺牲了优化的机会，但是节省了写缓存的额外开销。</li>
+</ol>
+<blockquote>
+<p>倒不如一直不记，以此来节省脑细胞。</p>
+</blockquote>
+<p>虽然内联缓存附带内联二字，但是它<strong>并没有内联目标方法</strong>。这里需要明确的是，任何方法调用除非被内联，否则都会有固定开销。<strong>这些开销来源于保存程序在该方法中的执行位置，以及新建、压入和弹出新方法所使用的栈帧</strong>。</p>
+<h3 id="6-JVM是如何处理异常的"><a href="#6-JVM是如何处理异常的" class="headerlink" title="6 JVM是如何处理异常的"></a>6 JVM是如何处理异常的</h3><p>异常处理的两大组成要素是<strong>抛出异常和捕获异常</strong>。这两大要素共同实现程序控制流的非正常转移。</p>
+<p>抛出异常可分为显式和隐式两种。显式抛异常的主体是应用程序，它指的是在程序中使用<strong>“throw”</strong>关键字，手动将异常实例抛出。</p>
+<p>隐式抛异常的主体则是 Java 虚拟机，它指的是 Java 虚拟机在执行过程中，碰到无法继续执行的异常状态，自动抛出异常。举例来说，Java 虚拟机在执行读取数组操作时，发现输入的索引值是负数，故而抛出数组索引越界异常（ArrayIndexOutOfBoundsException）。</p>
+<p>捕获异常则涉及了如下三种代码块。</p>
+<ol>
+<li>try 代码块：用来标记需要进行异常监控的代码。</li>
+<li>catch 代码块：跟在 try 代码块之后，用来捕获在 try 代码块中触发的某种指定类型的异常。除了声明所捕获异常的类型之外，catch 代码块还定义了针对该异常类型的异常处理器。在 Java 中，<strong>try 代码块后面可以跟着多个 catch 代码块，来捕获不同类型的异常。</strong>Java 虚拟机会从<strong>上至下</strong>匹配异常处理器。因此，前面的 catch 代码块所捕获的异常类型不能覆盖后边的，否则编译器会报错。</li>
+<li>finally 代码块：跟在 try 代码块和 catch 代码块之后，用来声明一段必定运行的代码。<strong>它的设计初衷是为了避免跳过某些关键的清理代码，例如关闭已打开的系统资源。</strong></li>
+</ol>
+<blockquote>
+<p>如果该异常被 catch 代码块捕获，finally 代码块则在 catch 代码块之后运行。在某些不幸的情况下，catch 代码块也触发了异常，那么 finally 代码块同样会运行，并会抛出 catch 代码块触发的异常。在某些极端不幸的情况下，finally 代码块也触发了异常，那么只好中断当前 finally 代码块的执行，并往外抛异常。</p>
+</blockquote>
+<h4 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h4><img src="/2021/05/17/JVM/Users/h/Desktop/JVM/image-20210527101124712.png" alt="image-20210527101124712" style="zoom:67%;">
+
+<p>所有异常时Throwable的子类或其子类的实例。分为异常和错误。异常有个子类Runtime Exception，意思是程序无法运行但还可以抢救以下，比如数组索引越界。</p>
+<p>RuntimeException 和 Error 属于 Java 里的非检查异常（unchecked exception）。其他异常则属于检查异常（checked exception）。所有的<strong>检查异常都需要程序显式地捕获</strong>，<strong>或者在方法声明中用 throws 关键字标注</strong>。通常情况下，程序中自定义的异常应为检查异常，以便最大化利用 Java 编译器的编译时检查。</p>
+<p>异常实例的构造十分昂贵。这是由于在构造异常实例时，Java 虚拟机便需要生成该异常的栈轨迹（stack trace）。该操作会逐一访问当前线程的 Java 栈帧，并且记录下各种调试信息，包括栈帧所指向方法的名字，方法所在的类名、文件名，以及在代码中的第几行触发该异常。</p>
+<h4 id="如何捕获"><a href="#如何捕获" class="headerlink" title="如何捕获"></a>如何捕获</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    mayThrowException();</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 对应的 Java 字节码</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(java.lang.String[])</span></span>;</span><br><span class="line">  Code:</span><br><span class="line">    <span class="number">0</span>: invokestatic mayThrowException:()V</span><br><span class="line">    <span class="number">3</span>: goto <span class="number">11</span></span><br><span class="line">    <span class="number">6</span>: astore_1</span><br><span class="line">    <span class="number">7</span>: aload_1</span><br><span class="line">    <span class="number">8</span>: invokevirtual java.lang.Exception.printStackTrace</span><br><span class="line">   <span class="number">11</span>: <span class="keyword">return</span></span><br><span class="line">  Exception table:</span><br><span class="line">    from  to target type</span><br><span class="line">      <span class="number">0</span>   <span class="number">3</span>   <span class="number">6</span>  Class java/lang/Exception  <span class="comment">// 异常表条目</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>在编译生成字节码后，每个方法都会附带异常表，其每一个条目代表一个异常处理器（一个catch块），并且由 from 指针、to 指针、target 指针以及所捕获的异常类型构成，这些指针的值是字节码索引（bytecode index，bci），用以定位字节码。</p>
+<p>from 指针和 to 指针标示了该异常处理器所监控的范围，例如 try 代码块所覆盖的范围。target 指针则指向异常处理器的起始位置，例如 catch 代码块的起始位置。</p>
+<p>编译过后，该方法的异常表拥有一个条目。</p>
+<p><strong>其 from 指针和 to 指针分别为 0 和 3，代表它的监控范围从索引为 0 的字节码开始，到索引为 3 的字节码结束（不包括 3）</strong>。</p>
+<p><strong>该条目的 target 指针是 6，代表这个异常处理器从索引为 6 的字节码开始</strong>。</p>
+<p><strong>条目的最后一列，代表该异常处理器所捕获的异常类型正是 Exception。</strong></p>
+<p>当程序触发异常时，Java 虚拟机会从上至下遍历异常表中的所有条目。当触发异常的字节码的索引值在某个异常表条目的监控范围内，Java 虚拟机会判断所抛出的异常和该条目想要捕获的异常是否匹配。如果匹配，Java 虚拟机会将控制流转移至该条目 target 指针指向的字节码（执行相应的catch）。</p>
+<p>如果遍历完所有异常表条目，Java 虚拟机仍未匹配到异常处理器，那么它会弹出当前方法对应的 Java 栈帧，并且在调用者（caller）中重复上述操作。在最坏情况下，Java 虚拟机需要遍历当前线程 Java 栈上所有方法的异常表。</p>
+<p>finally 代码块的编译比较复杂。当前版本 Java 编译器的做法，是<strong>复制 finally 代码块的内容，分别放在 try-catch 代码块所有正常执行路径以及异常执行路径的出口中</strong>。</p>
+<p><img src="/2021/05/17/JVM/image-20210527103450473.png" alt="image-20210527103450473"></p>
+<p>所有种类的异常（在 javap 中以 any 指代）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Foo</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> tryBlock;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> catchBlock;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> finallyBlock;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> methodExit;</span><br><span class="line"> </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      tryBlock = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      catchBlock = <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      finallyBlock = <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    methodExit = <span class="number">3</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">$ javap -c Foo</span><br><span class="line">...</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>;</span><br><span class="line">    Code:</span><br><span class="line">       <span class="number">0</span>: aload_0</span><br><span class="line">       <span class="number">1</span>: iconst_0</span><br><span class="line">       <span class="number">2</span>: putfield      #<span class="number">20</span>                 <span class="comment">// Field tryBlock:I</span></span><br><span class="line">       <span class="number">5</span>: goto          <span class="number">30</span></span><br><span class="line">       <span class="number">8</span>: astore_1</span><br><span class="line">       <span class="number">9</span>: aload_0</span><br><span class="line">      <span class="number">10</span>: iconst_1</span><br><span class="line">      <span class="number">11</span>: putfield      #<span class="number">22</span>                 <span class="comment">// Field catchBlock:I</span></span><br><span class="line">      <span class="number">14</span>: aload_0</span><br><span class="line">      <span class="number">15</span>: iconst_2</span><br><span class="line">      <span class="number">16</span>: putfield      #<span class="number">24</span>                 <span class="comment">// Field finallyBlock:I</span></span><br><span class="line">      <span class="number">19</span>: goto          <span class="number">35</span></span><br><span class="line">      <span class="number">22</span>: astore_2</span><br><span class="line">      <span class="number">23</span>: aload_0</span><br><span class="line">      <span class="number">24</span>: iconst_2</span><br><span class="line">      <span class="number">25</span>: putfield      #<span class="number">24</span>                 <span class="comment">// Field finallyBlock:I</span></span><br><span class="line">      <span class="number">28</span>: aload_2</span><br><span class="line">      <span class="number">29</span>: athrow</span><br><span class="line">      <span class="number">30</span>: aload_0</span><br><span class="line">      <span class="number">31</span>: iconst_2</span><br><span class="line">      <span class="number">32</span>: putfield      #<span class="number">24</span>                 <span class="comment">// Field finallyBlock:I</span></span><br><span class="line">      <span class="number">35</span>: aload_0</span><br><span class="line">      <span class="number">36</span>: iconst_3</span><br><span class="line">      <span class="number">37</span>: putfield      #<span class="number">26</span>                 <span class="comment">// Field methodExit:I</span></span><br><span class="line">      <span class="number">40</span>: <span class="keyword">return</span></span><br><span class="line">    Exception table:</span><br><span class="line">       from    to  target type</span><br><span class="line">           <span class="number">0</span>     <span class="number">5</span>     <span class="number">8</span>   Class java/lang/Exception</span><br><span class="line">           <span class="number">0</span>    <span class="number">14</span>    <span class="number">22</span>   any</span><br><span class="line"> </span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+
+<p>编译结果包含三份 finally 代码块。其中，<strong>前两份分别位于 try 代码块和 catch 代码块的正常执行路径出口</strong>。<strong>最后一份则作为异常处理器</strong>，监控 try 代码块以及 catch 代码块。<strong>它将捕获 try 代码块触发的、未被 catch 代码块捕获的异常，以及 catch 代码块触发的异常</strong></p>
+<p>如果 catch 代码块捕获了异常，并且触发了另一个异常，那么 finally 捕获并且重抛的异常是哪个呢？<strong>答案是后者。也就是说原本的异常便会被忽略掉</strong>，这对于代码调试来说十分不利。</p>
+<h4 id="Java7的Supressed异常和语法糖"><a href="#Java7的Supressed异常和语法糖" class="headerlink" title="Java7的Supressed异常和语法糖"></a>Java7的Supressed异常和语法糖</h4><p>这里不太懂</p>
+<h3 id="7-JVM是如何实现反射的"><a href="#7-JVM是如何实现反射的" class="headerlink" title="7 JVM是如何实现反射的"></a>7 JVM是如何实现反射的</h3><h4 id="反射"><a href="#反射" class="headerlink" title="反射"></a>反射</h4><p>通常来说，使用反射 API 的<strong>第一步便是获取 Class 对象</strong>。在 Java 中常见的有这么三种。</p>
+<ol>
+<li>使用静态方法 Class.forName 来获取。</li>
+<li>调用对象的 getClass() 方法。</li>
+<li>直接用类名 +“.class”访问。对于基本类型来说，它们的包装类型（wrapper classes）拥有一个名为“TYPE”的 final 静态字段，指向该基本类型对应的 Class 对象。</li>
+</ol>
+<p>例如，Integer.TYPE 指向 int.class。对于数组类型来说，可以使用类名 +“[ ].class”来访问，如 int[ ].class。</p>
+<p>除此之外，Class 类和 java.lang.reflect 包中还提供了许多返回 Class 对象的方法。例如，对于数组类的 Class 对象，调用 Class.getComponentType() 方法可以获得数组元素的类型。</p>
+<p>一旦得到了 Class 对象，我们便可以正式地使用反射功能了。下面我列举了较为常用的几项。</p>
+<ol>
+<li><strong>使用 newInstance() 来生成一个该类的实例</strong>。它要求该类中拥有一个无参数的构造器。</li>
+<li><strong>使用 isInstance(Object) 来判断一个对象是否该类的实例</strong>，语法上等同于 instanceof 关键字（JIT 优化时会有差别，我会在本专栏的第二部分详细介绍）。</li>
+<li><strong>使用 Array.newInstance(Class,int) 来构造该类型的数组。</strong></li>
+<li><strong>使用 getFields()/getConstructors()/getMethods() 来访问该类的成员</strong>。除了这三个之外，Class 类还提供了许多其他方法，详见 [4]。需要注意的是，方法名中带 Declared 的不会返回父类的成员，但是会返回私有成员；而不带 Declared 的则相反。</li>
+</ol>
+<p>当获得了类成员之后，我们可以进一步做如下操作。</p>
+<ul>
+<li><strong>使用 Constructor/Field/Method.setAccessible(true) 来绕开 Java 语言的访问限制。</strong></li>
+<li><strong>使用 Constructor.newInstance(Object[]) 来生成该类的实例。</strong></li>
+<li><strong>使用 Field.get/set(Object) 来访问字段的值。</strong></li>
+<li><strong>使用 Method.invoke(Object, Object[]) 来调用方法。</strong></li>
+</ul>
+<h3 id="Method-invoke的实现"><a href="#Method-invoke的实现" class="headerlink" title="Method.invoke的实现"></a>Method.invoke的实现</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Method</span> <span class="keyword">extends</span> <span class="title">Executable</span> </span>&#123;</span><br><span class="line">  ...</span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object obj, Object... args)</span> <span class="keyword">throws</span> ... </span>&#123;</span><br><span class="line">    ... <span class="comment">// 权限检查（意味着这里有性能的损失）</span></span><br><span class="line">    MethodAccessor ma = methodAccessor;</span><br><span class="line">    <span class="keyword">if</span> (ma == <span class="keyword">null</span>) &#123;</span><br><span class="line">      ma = acquireMethodAccessor();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ma.invoke(obj, args);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果你查阅 Method.invoke 的源代码，那么你会发现，<strong>它实际上委派给 MethodAccessor 来处理</strong>。MethodAccessor 是一个接口，它有两个已有的具体实现：一个通过<strong>本地方法</strong>实现反射调用，另一个则使用了<strong>委派模式</strong>。为了方便记忆，我便用“本地实现”和“委派实现”来指代这两者。</p>
+<p>每个 Method 实例的<strong>第一次反射</strong>调用都会生成一个委派实现，它所委派的具体实现便是一个本地实现。本地实现非常容易理解：当进入了 Java 虚拟机内部之后，我们便拥有了 Method 实例所指向方法的<strong>具体地址</strong>。这时候，反射调用无非就是将传入的参数准备好，然后调用进入目标方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// v0 版本</span></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">new</span> Exception(<span class="string">&quot;#&quot;</span> + i).printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="comment">//这里是反射</span></span><br><span class="line">    Class&lt;?&gt; klass = Class.forName(<span class="string">&quot;Test&quot;</span>);</span><br><span class="line">    Method method = klass.getMethod(<span class="string">&quot;target&quot;</span>, <span class="keyword">int</span>.class);</span><br><span class="line">    method.invoke(<span class="keyword">null</span>, <span class="number">0</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"># 不同版本的输出略有不同，这里我使用了 Java <span class="number">10</span>。</span><br><span class="line">$ java Test</span><br><span class="line">java.lang.Exception: #<span class="number">0</span></span><br><span class="line">        at Test.target(Test.java:<span class="number">5</span>)</span><br><span class="line">        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl .invoke0(Native Method)</span><br><span class="line"> a      t java.base/jdk.internal.reflect.NativeMethodAccessorImpl. .invoke(NativeMethodAccessorImpl.java:<span class="number">62</span>)</span><br><span class="line"> t       java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.i .invoke(DelegatingMethodAccessorImpl.java:<span class="number">43</span>)</span><br><span class="line">        java.base/java.lang.reflect.Method.invoke(Method.java:<span class="number">564</span>)</span><br><span class="line">  t        Test.main(Test.java:<span class="number">131</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>反射调用先是调用 Method.invoke，然后委派实现（DelegatingMethodAccessorImpl），再然后进入本地实现（NativeMethodAccessorImpl），最后到达目标方法。</strong></p>
+<h5 id="为什么反射调用还要采取委派实现作为中间层？"><a href="#为什么反射调用还要采取委派实现作为中间层？" class="headerlink" title="为什么反射调用还要采取委派实现作为中间层？"></a>为什么反射调用还要采取委派实现作为中间层？</h5><p>Java 的反射调用机制还设立了另一种动态生成字节码的实现（动态实现）**,直接使用 invoke 指令来调用目标方法**。之所以采用委派实现，便是为了能够在本地实现以及动态实现中切换。</p>
+<p>动态实现和本地实现相比，其运行效率要快上 20 倍。这是因为动态实现无需经过 Java 到 C++ 再到 Java 的切换，但由于生成字节码十分耗时，仅调用一次的话，反而是本地实现要快上 3 到 4 倍。</p>
+<p>考虑到许多反射调用仅会执行一次，<strong>Java 虚拟机设置了一个阈值 15（可以通过 -Dsun.reflect.inflationThreshold= 来调整），当某个反射调用的调用次数在 15 之下时，采用本地实现；当达到 15 时，便开始动态生成字节码，并将委派实现的委派对象切换至动态实现，</strong>这个过程我们称之为 Inflation。</p>
+<p>例如以下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// v1 版本</span></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">new</span> Exception(<span class="string">&quot;#&quot;</span> + i).printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    Class&lt;?&gt; klass = Class.forName(<span class="string">&quot;Test&quot;</span>);</span><br><span class="line">    Method method = klass.getMethod(<span class="string">&quot;target&quot;</span>, <span class="keyword">int</span>.class);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">20</span>; i++) &#123; <span class="comment">//重复二十次</span></span><br><span class="line">      method.invoke(<span class="keyword">null</span>, i);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"># 使用 -verbose:<span class="class"><span class="keyword">class</span> 打印加载的类</span></span><br><span class="line"><span class="class">$ <span class="title">java</span> -<span class="title">verbose</span>:<span class="title">class</span> <span class="title">Test</span></span></span><br><span class="line"><span class="class">...</span></span><br><span class="line"><span class="class"><span class="title">java</span>.<span class="title">lang</span>.<span class="title">Exception</span>: #14</span></span><br><span class="line"><span class="class">        <span class="title">at</span> <span class="title">Test</span>.<span class="title">target</span>(<span class="title">Test</span>.<span class="title">java</span>:5)</span></span><br><span class="line"><span class="class">        <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">NativeMethodAccessorImpl</span> .<span class="title">invoke0</span>(<span class="title">Native</span> <span class="title">Method</span>)</span></span><br><span class="line"><span class="class">        <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">NativeMethodAccessorImpl</span> .<span class="title">invoke</span>(<span class="title">NativeMethodAccessorImpl</span>.<span class="title">java</span>:62)</span></span><br><span class="line"><span class="class">        <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">DelegatingMethodAccessorImpl</span> .<span class="title">invoke</span>(<span class="title">DelegatingMethodAccessorImpl</span>.<span class="title">java</span>:43)</span></span><br><span class="line"><span class="class">        <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">java</span>.<span class="title">lang</span>.<span class="title">reflect</span>.<span class="title">Method</span>.<span class="title">invoke</span>(<span class="title">Method</span>.<span class="title">java</span>:564)</span></span><br><span class="line"><span class="class">        <span class="title">at</span> <span class="title">Test</span>.<span class="title">main</span>(<span class="title">Test</span>.<span class="title">java</span>:12)</span></span><br><span class="line"><span class="class">[0.158<span class="title">s</span>][<span class="title">info</span>][<span class="title">class</span>,<span class="title">load</span>] ...</span></span><br><span class="line"><span class="class">...</span></span><br><span class="line"><span class="class">[0.160<span class="title">s</span>][<span class="title">info</span>][<span class="title">class</span>,<span class="title">load</span>] <span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">GeneratedMethodAccessor1</span> <span class="title">source</span>: <span class="title">__JVM_DefineClass__</span>//<span class="title">GeneratedMethodAccessor1</span></span></span><br><span class="line"><span class="class"><span class="title">java</span>.<span class="title">lang</span>.<span class="title">Exception</span>: #15</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">Test</span>.<span class="title">target</span>(<span class="title">Test</span>.<span class="title">java</span>:5)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">NativeMethodAccessorImpl</span> .<span class="title">invoke0</span>(<span class="title">Native</span> <span class="title">Method</span>)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">NativeMethodAccessorImpl</span> .<span class="title">invoke</span>(<span class="title">NativeMethodAccessorImpl</span>.<span class="title">java</span>:62)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">DelegatingMethodAccessorImpl</span> .<span class="title">invoke</span>(<span class="title">DelegatingMethodAccessorImpl</span>.<span class="title">java</span>:43)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">java</span>.<span class="title">lang</span>.<span class="title">reflect</span>.<span class="title">Method</span>.<span class="title">invoke</span>(<span class="title">Method</span>.<span class="title">java</span>:564)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">Test</span>.<span class="title">main</span>(<span class="title">Test</span>.<span class="title">java</span>:12)</span></span><br><span class="line"><span class="class"><span class="title">java</span>.<span class="title">lang</span>.<span class="title">Exception</span>: #16</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">Test</span>.<span class="title">target</span>(<span class="title">Test</span>.<span class="title">java</span>:5)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">GeneratedMethodAccessor1</span> .<span class="title">invoke</span>(<span class="title">Unknown</span> <span class="title">Source</span>)//<span class="title">GeneratedMethodAccessor1</span></span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">jdk</span>.<span class="title">internal</span>.<span class="title">reflect</span>.<span class="title">DelegatingMethodAccessorImpl</span> .<span class="title">invoke</span>(<span class="title">DelegatingMethodAccessorImpl</span>.<span class="title">java</span>:43)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">java</span>.<span class="title">base</span>/<span class="title">java</span>.<span class="title">lang</span>.<span class="title">reflect</span>.<span class="title">Method</span>.<span class="title">invoke</span>(<span class="title">Method</span>.<span class="title">java</span>:564)</span></span><br><span class="line"><span class="class">       <span class="title">at</span> <span class="title">Test</span>.<span class="title">main</span>(<span class="title">Test</span>.<span class="title">java</span>:12)</span></span><br><span class="line"><span class="class">...</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>可以看到，在第 15 次（从 0 开始数）反射调用时，我们便触发了动态实现的生成。这时候，Java 虚拟机额外加载了不少类。其中，最重要的当属 GeneratedMethodAccessor1（第 30 行）。并且，从第 16 次反射调用开始，我们便切换至这个刚刚生成的动态实现（第 40 行）。</p>
+<p>反射调用的 Inflation 机制是可以通过参数（-Dsun.reflect.noInflation=true）来关闭的。这样一来，在反射调用一开始便会直接生成动态实现，而不会使用委派实现或者本地实现。</p>
+<h4 id="反射的开销"><a href="#反射的开销" class="headerlink" title="反射的开销"></a>反射的开销</h4><p><strong>以 getMethod 为代表的查找方法操作，会返回查找得到结果的一份拷贝（意味着不是同个对象但equal)。</strong>因此，我们应当避免在热点代码中使用返回 Method 数组的 getMethods 或者 getDeclaredMethods 方法，以减少不必要的堆空间消耗。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// v2 版本</span></span><br><span class="line">mport java.lang.reflect.Method;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 空方法</span></span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    Class&lt;?&gt; klass = Class.forName(<span class="string">&quot;Test&quot;</span>);</span><br><span class="line">    Method method = klass.getMethod(<span class="string">&quot;target&quot;</span>, <span class="keyword">int</span>.class);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">      <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">        System.out.println(temp - current);</span><br><span class="line">        current = temp;</span><br><span class="line">      &#125;</span><br><span class="line"> </span><br><span class="line">      method.invoke(<span class="keyword">null</span>, <span class="number">128</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br></pre></td></tr></table></figure>
+
+<p>以上反射调用的字节码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">59</span>: aload_2                         <span class="comment">// 加载 Method 对象</span></span><br><span class="line"><span class="number">60</span>: aconst_null                     <span class="comment">// 反射调用的第一个参数 null</span></span><br><span class="line"><span class="number">61</span>: iconst_1</span><br><span class="line"><span class="number">62</span>: anewarray Object                <span class="comment">// 生成一个长度为 1 的 Object 数组</span></span><br><span class="line"><span class="number">65</span>: dup</span><br><span class="line"><span class="number">66</span>: iconst_0</span><br><span class="line"><span class="number">67</span>: sipush <span class="number">128</span></span><br><span class="line"><span class="number">70</span>: invokestatic Integer.valueOf    <span class="comment">// 将 128 自动装箱成 Integer</span></span><br><span class="line"><span class="number">73</span>: aastore                         <span class="comment">// 存入 Object 数组中</span></span><br><span class="line"><span class="number">74</span>: invokevirtual Method.invoke     <span class="comment">// 反射调用</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到，额外做了两个操作：</p>
+<ol>
+<li>由于 Method.invoke 是一个变长参数方法，在字节码层面它的最后一个参数会是 Object 数组。Java 编译器会在方法调用处生成一个长度为传入参数数量的 Object 数组，并将传入参数一一存储进该数组中。</li>
+<li>由于 Object 数组不能存储基本类型，Java 编译器会对传入的基本类型参数进行自动装箱。</li>
+</ol>
+<p>这两个操作除了带来性能开销外，还可能占用堆内存，使得 GC 更加频繁。</p>
+<h5 id="关于装箱"><a href="#关于装箱" class="headerlink" title="关于装箱"></a>关于装箱</h5><p>关于第二个自动装箱，<strong>Java 缓存了 [-128, 127] 中所有整数所对应的 Integer 对象</strong>。当需要自动装箱的整数在这个范围之内时，便返回缓存的 Integer，否则需要新建一个 Integer 对象。</p>
+<p>因此，<strong>我们可以将这个缓存的范围扩大至覆盖 128</strong>（对应参数<br>-Djava.lang.Integer.IntegerCache.high=128），便可以避免需要新建 Integer 对象的场景</p>
+<h5 id="关于Object数组"><a href="#关于Object数组" class="headerlink" title="关于Object数组"></a>关于Object数组</h5><p>既然每个反射调用对应的参数个数是固定的，那么我们可以选择在循环外新建一个 Object 数组，设置好参数，并直接交给反射调用。改好的代码可以参照文稿中的 v3 版本。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// v3 版本</span></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 空方法</span></span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    Class&lt;?&gt; klass = Class.forName(<span class="string">&quot;Test&quot;</span>);</span><br><span class="line">    Method method = klass.getMethod(<span class="string">&quot;target&quot;</span>, <span class="keyword">int</span>.class);</span><br><span class="line"> </span><br><span class="line">    Object[] arg = <span class="keyword">new</span> Object[<span class="number">1</span>]; <span class="comment">// 在循环外构造参数数组</span></span><br><span class="line">    arg[<span class="number">0</span>] = <span class="number">128</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">      <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">        System.out.println(temp - current);</span><br><span class="line">        current = temp;</span><br><span class="line">      &#125;</span><br><span class="line"> </span><br><span class="line">      method.invoke(<span class="keyword">null</span>, arg);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是结果更糟了</p>
+<p>和GC有关。上一步解决了自动装箱之后查看运行时的 GC 状况，你会发现这段程序并不会触发 GC。其原因在于，<strong>原本的反射调用被内联了</strong>，从而使得即时编译器中的<strong>逃逸分析将原本新建的 Object 数组判定为不逃逸的对象。</strong></p>
+<p>逃逸分析我不懂，反正感觉是加速用的</p>
+<blockquote>
+<p> 如果一个对象不逃逸，那么即时编译器可以选择栈分配甚至是虚拟分配，也就是不占用堆空间。</p>
+</blockquote>
+<h5 id="再加速？"><a href="#再加速？" class="headerlink" title="再加速？"></a>再加速？</h5><p><strong>可以关闭反射调用的 Inflation 机制，从而取消委派实现，并且直接使用动态实现。</strong>此外，每次反射调用都会<strong>检查目标方法的权限，而这个检查同样可以在 Java 代码里关闭</strong>，在关闭了这两项机制之后，也就得到了我们的 v4 版本，它测得的结果约为基准的 1.3 倍。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在运行指令中添加如下两个虚拟机参数：</span></span><br><span class="line"><span class="comment">// -Djava.lang.Integer.IntegerCache.high=128</span></span><br><span class="line"><span class="comment">// -Dsun.reflect.noInflation=true</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"> </span><br><span class="line"><span class="comment">// v4 版本</span></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 在运行指令中添加如下两个虚拟机参数：</span></span><br><span class="line"><span class="comment">// -Djava.lang.Integer.IntegerCache.high=128</span></span><br><span class="line"><span class="comment">// -Dsun.reflect.noInflation=true</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 空方法</span></span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    Class&lt;?&gt; klass = Class.forName(<span class="string">&quot;Test&quot;</span>);</span><br><span class="line">    Method method = klass.getMethod(<span class="string">&quot;target&quot;</span>, <span class="keyword">int</span>.class);</span><br><span class="line">    method.setAccessible(<span class="keyword">true</span>);  <span class="comment">// 关闭权限检查</span></span><br><span class="line"> </span><br><span class="line">    <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">      <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">        System.out.println(temp - current);</span><br><span class="line">        current = temp;</span><br><span class="line">      &#125;</span><br><span class="line"> </span><br><span class="line">      method.invoke(<span class="keyword">null</span>, <span class="number">128</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个例子中，之所以反射调用能够变得这么快，主要是因为<strong>即时编译器中的方法内联</strong>。在关闭了 Inflation 的情况下，<strong>内联的瓶颈在于 Method.invoke 方法中对 MethodAccessor.invoke 方法的调用。</strong></p>
+<p>由于 Java 虚拟机的关于上述调用点的类型 profile（注：对于 invokevirtual 或者 invokeinterface，Java 虚拟机会记录下调用者的具体类型，我们称之为类型 profile）无法同时记录这么多个类，因此可能造成所测试的反射调用没有被内联的情况。（内联需要一定条件？）</p>
+<h3 id="8-JVM是怎么实现invokedynamic的？（上）"><a href="#8-JVM是怎么实现invokedynamic的？（上）" class="headerlink" title="8 JVM是怎么实现invokedynamic的？（上）"></a>8 JVM是怎么实现invokedynamic的？（上）</h3><h3 id="9-JVM是怎么实现invokedynamic的？（下）"><a href="#9-JVM是怎么实现invokedynamic的？（下）" class="headerlink" title="9 JVM是怎么实现invokedynamic的？（下）"></a>9 JVM是怎么实现invokedynamic的？（下）</h3><p>这里看不懂了，先放着</p>
+<h3 id="10-对象的内存布局"><a href="#10-对象的内存布局" class="headerlink" title="10 对象的内存布局"></a>10 对象的内存布局</h3><p>新建对象的方法：</p>
+<ol>
+<li>Object.clone 方法和反序列化通过直接复制已有的数据，来初始化新建对象的实例字段。</li>
+<li>Unsafe.allocateInstance 方法则没有初始化实例字段</li>
+<li><strong>而 new 语句和反射机制，通过调用构造器来初始化实例字段。</strong></li>
+</ol>
+<p>new关键字的指令：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Foo foo = new Foo(); 编译而成的字节码</span></span><br><span class="line">  <span class="number">0</span> <span class="keyword">new</span> Foo</span><br><span class="line">  <span class="number">3</span> dup</span><br><span class="line">  <span class="number">4</span> <span class="function">invokespecial <span class="title">Foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function">  7 astore_1</span></span><br></pre></td></tr></table></figure>
+
+<p>构造器：</p>
+<ol>
+<li><p>如果一个类没有定义任何构造器的话， Java 编译器会<strong>自动添加一个无参数的构造器</strong>。如果定义了有参数的构造器，则不会自动添加无参数构造器。</p>
+</li>
+<li><p><strong>子类的构造器需要调用父类的构造器</strong>。如果父类存在无参数构造器的话，该调用可以是隐式的，也就是说 Java 编译器会自动添加对父类构造器的调用。但是，如果父类没有无参数构造器，那么子类的构造器则需要显式地调用父类带参数的构造器。</p>
+<p>显式调用：</p>
+<ol>
+<li>直接使用“super”关键字调用父类构造器</li>
+<li>使用“this”关键字调用同一个类中的其他构造器。</li>
+</ol>
+<p> 无论是直接的显式调用，还是间接的显式调用，都需要作为构造器的第一条语句，以便优先初始化继承而来的父类字段。</p>
+</li>
+</ol>
+<p>总而言之，当我们调用一个构造器时，它将优先调用父类的构造器，直至 Object 类。这些构造器的调用者皆为同一对象，也就是通过 new 指令新建而来的对象。</p>
+<p><strong>通过 new 指令新建出来的对象，它的内存其实涵盖了所有父类中的实例字段。</strong>虽然子类无法访问父类的私有实例字段，或者子类的实例字段隐藏了父类的同名实例字段，但是子类的实例还是会为这些父类实例字段<strong>分配内存</strong>的。</p>
+<h4 id="压缩指针"><a href="#压缩指针" class="headerlink" title="压缩指针"></a>压缩指针</h4><p>在 JVM，每个 Java 对象都有一个<strong>对象头（object header）</strong>，这个由<strong>标记字段</strong>和<strong>类型指针</strong>所构成。</p>
+<p>标记字段：存储 Java 虚拟机有关该对象的运行数据，如哈希码、GC 信息以及锁信息</p>
+<p>类型指针：指向该对象的类</p>
+<p> 64 位的 Java 虚拟机中，<strong>对象头的标记字段占 64 位，而类型指针又占了 64 位</strong>。也就是说，每一个 Java 对象在内存中的额外开销就是 16 个字节</p>
+<p>以 Integer 类为例，它仅有一个 int 类型的私有字段，占 4 个字节。因此，每一个 Integer 对象的额外内存开销至少是 400%。这也是为什么 Java 要引入基本类型的原因之一。</p>
+<p>所以引入了压缩指针，对应虚拟机选项 -XX:+UseCompressedOops，默认开启，原本64位的对象指针变为32位，对象头中的类型指针也变为32位，<strong>对象头的大小从 16 字节降至 12 字节。</strong></p>
+<blockquote>
+<p>打个比方，路上停着的全是房车，而且每辆房车恰好占据两个停车位。现在，我们按照顺序给它们编号。也就是说，停在 0 号和 1 号停车位上的叫 0 号车，停在 2 号和 3 号停车位上的叫 1 号车，依次类推。</p>
+<p>原本的内存寻址用的是车位号。比如说我有一个值为 6 的指针，代表第 6 个车位，那么沿着这个指针可以找到 3 号车。现在我们规定指针里存的值是车号，比如 3 指代 3 号车。当需要查找 3 号车时，我便可以将该指针的值乘以 2，再沿着 6 号车位找到 3 号车。</p>
+<p>这样一来，<strong>32 位压缩指针最多可以标记 2 的 32 次方辆车，对应着 2 的 33 次方个车位</strong>。当然，房车也有大小之分。大房车占据的车位可能是三个甚至是更多。不过这并不会影响我们的寻址算法：我们只需跳过部分车号，便可以保持原本车号 *2 的寻址系统。</p>
+</blockquote>
+<p>上述模型有一个前提，就是每辆车都从<strong>偶数号车位</strong>停起。这个概念我们称之为<strong>内存对齐</strong>（对应虚拟机选项 -XX:ObjectAlignmentInBytes，默认值为 8）。</p>
+<p>默认情况下，Java 虚拟机堆中对象的起始地址需要对齐至 <strong>8 的倍数</strong>。如果一个对象用不到 8N 个字节，那么空白的那部分空间就浪费掉了。这些浪费掉的空间我们称之为<strong>对象间的填充（padding）。</strong></p>
+<p>在默认情况下<strong>，Java 虚拟机中的 32 位压缩指针可以寻址到 2 的 35 次方个字节（2^32 * 8），也就是 32GB 的地址空间（超过 32GB 则会关闭压缩指针）</strong>。我们可以通过配置刚刚提到的内存对齐选项（-XX:ObjectAlignmentInBytes）来进一步提升寻址范围。但是，这同时也可能增加对象间填充，导致压缩指针没有达到原本节省空间的效果。</p>
+<p>字段内存对齐的其中一个原因，是让字段只出现在同一 CPU 的缓存行中。这里我就不太懂了</p>
+<h4 id="字段重排列"><a href="#字段重排列" class="headerlink" title="字段重排列"></a>字段重排列</h4><p><strong>Java 虚拟机重新分配字段的先后顺序，以达到内存对齐的目的。</strong></p>
+<p>规则：</p>
+<ol>
+<li>如果<strong>一个字段占据 C 个字节</strong>，那么该<strong>字段的偏移量需要对齐至 NC</strong>。这里偏移量指的是字段地址与对象的起始地址差值。</li>
+<li>子类所继承字段的偏移量，需要与父类对应字段的偏移量保持一致</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">  <span class="keyword">long</span> l;</span><br><span class="line">  <span class="keyword">int</span> i；</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> <span class="keyword">extends</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">  <span class="keyword">long</span> l;</span><br><span class="line">  <span class="keyword">int</span> i;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 启用压缩指针时，B 类的字段分布</span><br><span class="line">B object internals:</span><br><span class="line"> OFFSET  SIZE   TYPE DESCRIPTION</span><br><span class="line">      <span class="number">0</span>     <span class="number">4</span>        (object header)</span><br><span class="line">      <span class="number">4</span>     <span class="number">4</span>        (object header)</span><br><span class="line">      <span class="number">8</span>     <span class="number">4</span>        (object header)</span><br><span class="line">     <span class="number">12</span>     <span class="number">4</span>    <span class="keyword">int</span> A.i                                       <span class="number">0</span></span><br><span class="line">     <span class="number">16</span>     <span class="number">8</span>   <span class="keyword">long</span> A.l                                       <span class="number">0</span></span><br><span class="line">     <span class="number">24</span>     <span class="number">8</span>   <span class="keyword">long</span> B.l                                       <span class="number">0</span></span><br><span class="line">     <span class="number">32</span>     <span class="number">4</span>    <span class="keyword">int</span> B.i                                       <span class="number">0</span></span><br><span class="line">     <span class="number">36</span>     <span class="number">4</span>        (loss due to the next object alignment)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>当启用压缩指针时，可以看到 Java 虚拟机将 A 类的 int 字段放置于 long 字段之前，以填充因为 long 字段对齐造成的 4 字节缺口。由于对象整体大小需要对齐至 8N，因此对象的最后会有 4 字节的空白填充。</p>
+<h3 id="11-垃圾回收-上"><a href="#11-垃圾回收-上" class="headerlink" title="11 垃圾回收 上"></a>11 垃圾回收 上</h3><p>垃圾回收，顾名思义，便是将已经分配出去的，但却不再使用的内存回收回来，以便能够再次分配。在 Java 虚拟机的语境下，垃圾指的是死亡的对象所占据的堆空间。</p>
+<h4 id="引用计数法和可达性分析"><a href="#引用计数法和可达性分析" class="headerlink" title="引用计数法和可达性分析"></a>引用计数法和可达性分析</h4><p>引用计数法（reference counting）</p>
+<p>它的做法是为每个对象添加一个<strong>引用计数器，用来统计指向该对象的引用个数</strong>。一旦某个对象的引用计数器为 <strong>0</strong>，则说明该对象已经死亡，便可以被回收了。</p>
+<p><strong>具体实现：</strong>如果<strong>有一个引用，被赋值为某一对象</strong>，那么将该对象的引用计数器 +1。<strong>如果一个指向某一对象的引用，被赋值为其他值</strong>，那么将该对象的引用计数器 -1。</p>
+<p>也就是说，我们需要截获所有的引用更新操作，并且相应地增减目标对象的引用计数器。</p>
+<ol>
+<li>需要额外空间</li>
+<li>频繁的更新操作</li>
+<li>无法处理循环引用对象</li>
+</ol>
+<p>假设对象 a 与 b 相互引用，除此之外没有其他引用指向 a 或者 b。在这种情况下，a 和 b 实际上已经死了，但由于它们的引用计数器皆不为 0，在引用计数法的心中，这两个对象还活着。因此，这些循环引用对象所占据的空间将不可回收，从而造成了内存泄露。</p>
+<p><strong>目前 Java 虚拟机的主流垃圾回收器采取的是可达性分析算法。</strong></p>
+<p>这个算法的实质在于将一系列 <strong>GC Roots</strong> 作为初始的存活对象合集（live set），然后从该合集出发，探索所有能够被该集合引用到的对象，并将其加入到该集合中，这个过程我们也称之为标记（mark）。最终，未被探索到的对象便是死亡的，是可以回收的。</p>
+<p><img src="/2021/05/17/JVM/v2-38552a00d9bfb53f0c780e26a0d4b078_720w.jpg" alt="img"></p>
+<h4 id="GC-Roots"><a href="#GC-Roots" class="headerlink" title="GC Roots"></a>GC Roots</h4><p>暂时理解为由堆外指向堆内的引用</p>
+<p>GC Roots 包括（但不限于）如下几种：</p>
+<ol>
+<li><strong>Java 方法栈桢中的局部变量；</strong></li>
+<li><strong>已加载类的静态变量；</strong></li>
+<li><strong>JNI handles；</strong></li>
+<li><strong>已启动且未停止的 Java 线程。</strong></li>
+</ol>
+<p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/53613423/answer/135743258">https://www.zhihu.com/question/53613423/answer/135743258</a></p>
+<p><strong>可达性分析可以解决引用计数法所不能解决的循环引用问题</strong>。即便对象 a 和 b 相互引用，只要从 GC Roots 出发无法到达 a 或者 b，那么可达性分析便不会将它们加入存活对象合集之中。</p>
+<h4 id="Stop-the-world-以及安全点"><a href="#Stop-the-world-以及安全点" class="headerlink" title="Stop-the-world 以及安全点"></a>Stop-the-world 以及安全点</h4><p>在多线程环境下，其他线程可能会更新已经访问过的对象中的引用（改变JVM的堆栈），从而造成误报（将引用设置为 null，该报不报）或者漏报（将引用设置为未被访问过的对象，不该报的报了，这就危险了，JVM可能崩溃）</p>
+<p>如何解决？如何保证标记过程中堆栈的状态改变？</p>
+<p>JVM使用安全点机制实现Stop-the-world操作。</p>
+<p>Stop-the-world方式十分简单粗暴，停止其他非垃圾回收线程的工作直至完成GC（GC pause）</p>
+<p>JVM受到Stop-the-wold请求，会等待所有的线程都到达安全点，才允许请求 Stop-the-world 的线程进行独占的工作。</p>
+<p>安全点的初始目的并不是让其他线程停下，<strong>而是找到一个稳定的执行状态</strong>，在这个执行状态下，Java 虚拟机的堆栈不会发生变化，垃圾回收器便能够“安全”地执行可达性分析。</p>
+<p>只要不离开安全点，JVM便可以再垃圾回收的同时继续运行本地代码。</p>
+<p>那安全点怎么找呢？</p>
+<ol>
+<li><p>例如：当 Java 程序通过 JNI 执行本地代码时，如果这段代码不访问 Java 对象、调用 Java 方法或者返回至原 Java 方法，那么 Java 虚拟机的堆栈不会发生改变，也就代表着这段本地代码可以作为同一个安全点。</p>
+<p><strong>本地代码</strong>需要通过JNI的AP来完成访问 Java 对象、调用 Java 方法或返回至原 Java 方法这三个操作， Java 虚拟机仅需在 API 的入口处进行安全点检测（safepoint poll），测试是否有其他线程请求停留在安全点里，便可以在必要的时候挂起当前线程。</p>
+</li>
+<li><p>除了执行 JNI 本地代码外，Java 线程还有其他几种状态：<strong>解释执行字节码、执行即时编译器生成的机器码和线程阻塞</strong></p>
+<ol>
+<li>阻塞的线程由于处于 Java 虚拟机线程调度器的掌控之下，因此属于安全点。</li>
+<li>解释执行：字节码与字节码之间皆可作为安全点。Java 虚拟机采取的做法是，当有安全点请求时，<strong>执行一条字节码便进行一次安全点检测。</strong></li>
+<li>即时编译器生成的机器码则比较复杂，运行在底层硬件之上，不受JVM控制，因此<strong>在生成机器码时，</strong>即时编译器需要插入安全点检测。</li>
+</ol>
+<p>什么不在每一条机器码或者每一个机器码基本块处插入安全点检测呢？</p>
+<ol>
+<li>安全点检测本身有一定的开销。不过 HotSpot 虚拟机已经将<strong>机器码中安全点检测简化为一个内存访问操作。在有安全点请求的情况下，Java 虚拟机会将安全点检测访问的内存所在的页设置为不可读，并且定义一个 segfault 处理器，来截获因访问该不可读内存而触发 segfault 的线程，并将它们挂起。</strong></li>
+<li><strong>即时编译器生成的机器码打乱了原本栈桢上的对象分布状况</strong>。在进入安全点时，机器码还需提供一些<strong>额外的信息</strong>，来表明哪些寄存器，或者当前栈帧上的哪些内存空间存放着指向对象的引用，以便垃圾回收器能够枚举 GC Roots。这些信息需要不少空间来存储，因此即时编译器会尽量避免过多的安全点检测</li>
+</ol>
+</li>
+</ol>
+<h4 id="垃圾回收的三种方式"><a href="#垃圾回收的三种方式" class="headerlink" title="垃圾回收的三种方式"></a>垃圾回收的三种方式</h4><ol>
+<li>清除（sweep）：内存碎片，分配效率低（新建对象时，我们要搜索一块足够大的内存空间）</li>
+<li>压缩（compact）：性能开销</li>
+<li>复制（copy）：内存区域分为两等分，分别用两个指针 <strong>from 和 to</strong> 来维护，并且只是用 from 指针指向的内存区域来分配内存。当发生垃圾回收时，便把存活的对象复制到 to 指针指向的内存区域中，并且交换 from 指针和 to 指针的内容。<strong>空间使用效率低</strong>，只能用一半。</li>
+</ol>
+<h3 id="12-垃圾回收-下"><a href="#12-垃圾回收-下" class="headerlink" title="12 垃圾回收 下"></a>12 垃圾回收 下</h3><p>我tm已经写好了结果没保存</p>
+<h3 id="13-Java内存模型"><a href="#13-Java内存模型" class="headerlink" title="13 Java内存模型"></a>13 Java内存模型</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a=<span class="number">0</span>, b=<span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> r2 = a;</span><br><span class="line">  b = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method2</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> r1 = b;</span><br><span class="line">  a = <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>定义了两个共享变量 a 和 b，以及两个方法。第一个方法将局部变量 r2 赋值为 a，然后将共享变量 b 赋值为 1。第二个方法将局部变量 r1 赋值为 b，然后将共享变量 a 赋值为 2。请问（r1，r2）的可能值都有哪些？</p>
+<ol>
+<li>单线程：可以先调用第一个方法，最终（r1，r2）为（1，0）；也可以先调用第二个方法，最终为（0，2）</li>
+<li>多线程：，如果 Java 虚拟机在执行了任一方法的第一条赋值语句之后便切换线程，那么最终结果将可能出现（0，0）的情况</li>
+</ol>
+<p>（1， 2）？</p>
+<p>出现（1， 2）有三个原因</p>
+<ol>
+<li>编译器的重排序</li>
+<li>处理其乱序执行</li>
+<li>内存系统重排序</li>
+</ol>
+<p>只讲编译器优化的重排序</p>
+<p>首先需要说明一点，即时编译器（和处理器）需要保证程序能够遵守 <strong>as-if-serial</strong> 属性。通俗地说，<strong>就是在单线程情况下，要给程序一个顺序执行的假象。即经过重排序的执行结果要与顺序执行的结果保持一致。</strong></p>
+<h4 id="1"><a href="#1" class="headerlink" title="1"></a>1</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//扩展第一个方法</span></span><br><span class="line"><span class="keyword">int</span> a=<span class="number">0</span>, b=<span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> r2 = a;</span><br><span class="line">  b = <span class="number">1</span>;</span><br><span class="line">  .. <span class="comment">// Code uses b</span></span><br><span class="line">  <span class="keyword">if</span> (r2 == <span class="number">2</span>) &#123;</span><br><span class="line">    .. </span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//先用b，再用r2</span></span><br></pre></td></tr></table></figure>
+
+<p>此时即时编译器有两种选择：</p>
+<ol>
+<li>在一开始便将 a 加载至某一寄存器中，并且在接下来 b 的赋值操作以及使用 b 的代码中避免使用该寄存器。</li>
+<li>在真正使用 r2 时才将 a 加载至寄存器中。这么一来，在执行使用 b 的代码时，我们不再霸占一个通用寄存器，从而减少需要借助栈空间的情况。</li>
+</ol>
+<h4 id="2"><a href="#2" class="headerlink" title="2"></a>2</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a=<span class="number">0</span>, b=<span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">for</span> (..) &#123;</span><br><span class="line">    <span class="keyword">int</span> r2 = a;</span><br><span class="line">    b = <span class="number">1</span>;</span><br><span class="line">    .. <span class="comment">// Code uses r2 and rewrites a</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再循环中使用r2并更新a。由于对 b 的赋值是循环无关的，即时编译器很有可能将<strong>其移出循环之前</strong>，<strong>而对 r2 的赋值语句还停留在循环之中。</strong></p>
+<p>在单线程环境下不需担心发生（1， 2）</p>
+<p>在多线程中会2有数据竞争</p>
+<h4 id="Java内存模型和happens-before关系"><a href="#Java内存模型和happens-before关系" class="headerlink" title="Java内存模型和happens-before关系"></a>Java内存模型和happens-before关系</h4><p>happens-before 关系是用来描述两个操作的内存可见性的。如果操作 X happens-before 操作 Y，那么 X 的结果对于 Y 可见。</p>
+<p>在同一个线程中，字节码的先后顺序（program order）也暗含了 happens-before 关系：<strong>在程序控制流路径中靠前的字节码 happens-before 靠后的字节码。</strong></p>
+<p><strong>然而，这并不意味着前者一定在后者之前执行。实际上，如果后者没有观测前者的运行结果，即后者没有数据依赖于前者，那么它们可能会被重排序。</strong></p>
+<p>线程间happens-before:</p>
+<ol>
+<li>解锁操作 happens-before 之后（这里指时钟顺序先后）对同一把锁的加锁操作。</li>
+<li><strong>volatile</strong> 字段的写操作 happens-before 之后（这里指时钟顺序先后）对同一字段的读操作。</li>
+<li>线程的启动操作（即 Thread.starts()） happens-before 该线程的第一个操作。</li>
+<li>线程的最后一个操作 happens-before 它的终止事件（即其他线程通过 Thread.isAlive() 或 Thread.join() 判断该线程是否中止）。</li>
+<li>线程对其他线程的中断操作 happens-before 被中断线程所收到的中断事件（即被中断线程的 InterruptedException 异常，或者第三个线程针对被中断线程的 Thread.interrupted 或者 Thread.isInterrupted 调用）。</li>
+<li>构造器中的最后一个操作 happens-before 析构器的第一个操作。</li>
+</ol>
+<h4 id="锁，volatile-字段，final-字段与安全发布"><a href="#锁，volatile-字段，final-字段与安全发布" class="headerlink" title="锁，volatile 字段，final 字段与安全发布"></a>锁，volatile 字段，final 字段与安全发布</h4><h3 id="14-JVM如何实现synchronized"><a href="#14-JVM如何实现synchronized" class="headerlink" title="14 JVM如何实现synchronized"></a>14 JVM如何实现synchronized</h3><p>这个关键字不懂，跳过</p>
+<h3 id="15-Java语法糖和Java编辑器"><a href="#15-Java语法糖和Java编辑器" class="headerlink" title="15 Java语法糖和Java编辑器"></a>15 Java语法糖和Java编辑器</h3><h4 id="auto-boxing-amp-auto-unboxing"><a href="#auto-boxing-amp-auto-unboxing" class="headerlink" title="auto-boxing &amp; auto-unboxing"></a>auto-boxing &amp; auto-unboxing</h4><p>之所以需要包装类型，是因为许多 Java 核心类库的 API 都是面向对象的。举个例子，Java 核心类库中的容器类，就只支持引用类型。</p>
+<p>对于基本类型的数值来说，我们需要先将其转换为对应的包装类，再存入容器之中。在 Java 程序中，这个转换可以是显式，也可以是隐式的，后者正是 Java 中的自动装箱。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">foo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  ArrayList&lt;Integer&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  list.add(<span class="number">0</span>);</span><br><span class="line">  <span class="keyword">int</span> result = list.get(<span class="number">0</span>);</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当向泛型参数为 Integer 的 ArrayList 添加 int 值时，便需要用到自动装箱了。</p>
+<p>字节码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">foo</span><span class="params">()</span></span>;</span><br><span class="line">  Code:</span><br><span class="line">     <span class="number">0</span>: <span class="keyword">new</span> java/util/ArrayList</span><br><span class="line">     <span class="number">3</span>: dup</span><br><span class="line">     <span class="number">4</span>: invokespecial java/util/ArrayList.<span class="string">&quot;&lt;init&gt;&quot;</span>:()V</span><br><span class="line">     <span class="number">7</span>: astore_1</span><br><span class="line">     <span class="number">8</span>: aload_1</span><br><span class="line">     <span class="number">9</span>: iconst_0</span><br><span class="line">    <span class="number">10</span>: invokestatic java/lang/Integer.valueOf:(I)Ljava/lang/Integer;</span><br><span class="line">    <span class="number">13</span>: invokevirtual java/util/ArrayList.add:(Ljava/lang/Object;)Z</span><br><span class="line">    <span class="number">16</span>: pop</span><br><span class="line">    <span class="number">17</span>: aload_1</span><br><span class="line">    <span class="number">18</span>: iconst_0</span><br><span class="line">    <span class="number">19</span>: invokevirtual java/util/ArrayList.get:(I)Ljava/lang/Object;</span><br><span class="line">    <span class="number">22</span>: checkcast java/lang/Integer</span><br><span class="line">    <span class="number">25</span>: invokevirtual java/lang/Integer.intValue:()I</span><br><span class="line">    <span class="number">28</span>: istore_2</span><br><span class="line">    <span class="number">29</span>: iload_2</span><br><span class="line">    <span class="number">30</span>: ireturn</span><br></pre></td></tr></table></figure>
+
+<p>在上面字节码偏移量为 10 的指令中，我们调用了 Integer.valueOf 方法，将 int 类型的值转换为 Integer 类型，再存储至容器类中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Integer <span class="title">valueOf</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (i &gt;= IntegerCache.low &amp;&amp; i &lt;= IntegerCache.high)</span><br><span class="line">        <span class="keyword">return</span> IntegerCache.cache[i + (-IntegerCache.low)];</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> Integer(i);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//Integer.valueOf 的源代码</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到，当请求的 int 值在某个范围内时，我们会返回缓存了的 Integer 对象；而当所请求的 int 值在范围之外时，我们则会新建一个 Integer 对象。</p>
+<p>参数 java.lang.Integer.IntegerCache.high，影响这里面的 IntegerCache.high。也就是说，我们可以通过配置该参数，扩大 Integer 缓存的范围。Java 虚拟机参数 -XX:+AggressiveOpts 也会将 IntegerCache.high 调整至 20000。</p>
+<p>奇怪的是，Java 并不支持对 IntegerCache.low 的更改，也就是说，<strong>对于小于 -128 的整数，我们无法直接使用由 Java 核心类库所缓存的 Integer 对象。</strong></p>
+<p>return时就会自动拆箱</p>
+<h4 id="泛型与类型擦除"><a href="#泛型与类型擦除" class="headerlink" title="泛型与类型擦除"></a>泛型与类型擦除</h4><p>往 ArrayList 中添加元素的 add 方法，所接受的参数类型是 Object；而从 ArrayList 中获取元素的 get 方法，其返回类型同样也是 Object。</p>
+<p>前者还好，但是对于后者，在字节码中我们需要进行<strong>向下转换</strong>，<strong>将所返回的 Object 强制转换为 Integer，方能进行接下来的自动拆箱。</strong></p>
+<p>出现这种情况，是因为 Java 泛型的类型擦除。这是个什么概念呢？简单地说，那便是 Java 程序里的泛型信息，在 Java 虚拟机里全部都丢失了。<strong>这么做主要是为了兼容引入泛型之前的代码。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">GenericTest</span>&lt;<span class="title">T</span> <span class="keyword">extends</span> <span class="title">Number</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function">T <span class="title">foo</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> t;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//对于限定了继承类的泛型参数，经过类型擦除后，所有的泛型参数都将变成所限定的继承类。</span></span><br></pre></td></tr></table></figure>
+
+<p>Java 编译器将<strong>选取该泛型所能指代的所有类中层次最高的那个，作为替换泛型的类。</strong></p>
+<p>上边程序的字节码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">T <span class="title">foo</span><span class="params">(T)</span></span>;</span><br><span class="line">  descriptor: (Ljava/lang/Number;)Ljava/lang/Number;</span><br><span class="line">  flags: (<span class="number">0x0000</span>)</span><br><span class="line">  Code:</span><br><span class="line">    stack=<span class="number">1</span>, locals=<span class="number">2</span>, args_size=<span class="number">2</span></span><br><span class="line">       <span class="number">0</span>: aload_1</span><br><span class="line">       <span class="number">1</span>: areturn</span><br><span class="line">  Signature: (TT;)TT;</span><br></pre></td></tr></table></figure>
+
+<p>foo 方法的<strong>方法描述符</strong>所接收参数的类型以及返回类型都为 Number。</p>
+<p>不过，字节码中仍存在泛型参数的信息，如方法声明里的 T foo(T)，以及方法签名（Signature）中的“(TT;)TT;”。这类信息主要由 Java 编译器在编译他类时使用。</p>
+<p>Java 编译器可以根据泛型参数判断程序中的语法是否正确</p>
+<h4 id="桥接方法"><a href="#桥接方法" class="headerlink" title="桥接方法"></a>桥接方法</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Merchant</span>&lt;<span class="title">T</span> <span class="keyword">extends</span> <span class="title">Customer</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">actionPrice</span><span class="params">(T customer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0.0d</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">VIPOnlyMerchant</span> <span class="keyword">extends</span> <span class="title">Merchant</span>&lt;<span class="title">VIP</span>&gt; </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">actionPrice</span><span class="params">(VIP customer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0.0d</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>经过类型擦除后，父类的方法描述符为 <strong>(LCustomer;)D</strong>，而子类的方法描述符为 <strong>(LVIP;)D</strong>。这显然不符合 Java 虚拟机关于方法重写的定义。（方法重写要方法描述符相同，即返回值、参数类型方法名相同）。</p>
+<p>为了保证编译而成的 Java 字节码能够保留重写的语义，Java 编译器额外添加了一个桥接方法。该桥接方法在字节码层面重写了父类的方法，并将调用子类的方法。</p>
+<p>字节码省略，看等价的代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">actionPrice</span><span class="params">(Customer customer)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> actionPrice((VIP) customer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>它重写了父类的同名同方法描述符的方法。该桥接方法将传入的 Customer 参数强制转换为 VIP 类型，再调用原本的 actionPrice(VIP) 方法。</p>
+<p>当一个声明类型为 Merchant，实际类型为 VIPOnlyMerchant 的对象，调用 actionPrice 方法时，字节码里的符号引用指向的是 <strong>Merchant.actionPrice(Customer) 方法。</strong>Java 虚拟机将<strong>动态绑定至 VIPOnlyMerchant 类的桥接方法之中，并且调用其 actionPrice(VIP) 方法。</strong></p>
+<p>当你尝试通过传入一个声明类型为 Customer 的对象作为参数，调用 VIPOnlyMerchant 类的 actionPrice 方法时，Java 编译器会报错，并且提示参数类型不匹配。（不可调用这个自动生成的桥接方法）。你可以选择使用反射机制。</p>
+<p>除了前面介绍的泛型重写会生成桥接方法之外，如果子类定义了一个与父类参数类型相同的方法，其返回类型为<strong>父类方法</strong>  的<strong>返回类型的子类</strong>，那么 Java 编译器也会为其生成桥接方法。</p>
+<h4 id="Iterable"><a href="#Iterable" class="headerlink" title="Iterable"></a>Iterable</h4><p>foreach 循环允许 Java 程序在 for 循环里遍历数组或者 Iterable 对象。</p>
+<p>对于<strong>数组</strong>来说，foreach 循环将从 0 开始逐一访问数组中的元素，直至<strong>数组</strong>的末尾。其等价的代码如下面所示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">(<span class="keyword">int</span>[] array)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> item : array) &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 等同于</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">bar</span><span class="params">(<span class="keyword">int</span>[] array)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span>[] myArray = array;</span><br><span class="line">  <span class="keyword">int</span> length = myArray.length;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; length; i++) &#123;</span><br><span class="line">    <span class="keyword">int</span> item = myArray[i];</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于 <strong>Iterable 对象</strong>来说，foreach 循环将调用其 iterator 方法，并且用它的 hasNext 以及 next 方法来遍历该 Iterable 对象中的元素。其等价的代码如下面所示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">(ArrayList&lt;Integer&gt; list)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">for</span> (Integer item : list) &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 等同于</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">bar</span><span class="params">(ArrayList&lt;Integer&gt; list)</span> </span>&#123;</span><br><span class="line">  Iterator&lt;Integer&gt; iterator = list.iterator();</span><br><span class="line">  <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">    Integer item = iterator.next();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="switch"><a href="#switch" class="headerlink" title="switch"></a>switch</h4><p>字符串 switch 编译而成的字节码看起来非常复杂，但实际上就是一个哈希桶。由于每个 case 所截获的字符串都是常量值，因此，Java 编译器会将原来的字符串 switch 转换为 int 值 switch，比较所输入的字符串的哈希值。</p>
+<p>由于字符串哈希值很容易发生碰撞，因此，我们还需要用 String.equals 逐个比较相同哈希值的字符串。</p>
+<h3 id="即时编译-上"><a href="#即时编译-上" class="headerlink" title="即时编译 上"></a>即时编译 上</h3><h4 id="分层编译模式"><a href="#分层编译模式" class="headerlink" title="分层编译模式"></a>分层编译模式</h4><p>HotSpot 虚拟机包含多个即时编译器 C1、C2 和 Graal。</p>
+<p>Graal 是一个实验性质的即时编译器，可以通过参数 -XX:+UnlockExperimentalVMOptions -XX:+UseJVMCICompiler 启用，并且替换 C2。</p>
+<p>在 Java 7 以前，我们需要根据程序的特性选择对应的即时编译器。对于执行时间较短的，或者对启动性能有要求的程序，我们采用编译效率较快的 C1，对应参数 -client。对于执行时间较长的，或者对峰值性能有要求的程序，我们采用生成代码执行效率较快的 C2，对应参数 -server。</p>
+<p>Java 7 引入了<strong>分层编译（对应参数 -XX:+TieredCompilation）</strong>的概念，综合了 C1 的启动性能优势和 C2 的峰值性能优势。</p>
+<p>分层编译将 Java 虚拟机的执行状态分为了五个层次。为了方便阐述，我用“C1 代码”来指代由 C1 生成的机器码，“C2 代码”来指代由 C2 生成的机器码。五个层级分别是：</p>
+<p>0.解释执行；<br>1.执行不带 profiling 的 C1 代码；<br>2.执行仅带方法调用次数以及循环回边执行次数 profiling 的 C1 代码；<br>3.执行带所有 profiling 的 C1 代码；<br>4.执行 C2 代码。</p>
+<p>C2 代码的执行效率要比 C1 代码的高出 30% 以上。</p>
+<p>然而，对于 C1 代码的三种状态，按执行效率从高至低则是 <strong>1 层 &gt; 2 层 &gt; 3 层。</strong> profiling 越多，其额外的性能开销越大。<strong>profiling 是指在程序执行过程中，收集能够反映程序执行状态的数据</strong>。这里所收集的数据我们称之为程序的 profile。</p>
+<p><img src="/2021/05/17/JVM/%E4%B8%8B%E8%BD%BD.png" alt="下载"></p>
+<p><strong>在 5 个层次的执行状态中，1 层和 4 层为终止状态。</strong></p>
+<ol>
+<li><p><strong>通常情况下，热点方法会被 3 层的 C1 编译，然后再被 4 层的 C2 编译</strong>。</p>
+</li>
+<li><p>如果方法的字节码数目比较少（如 getter/setter），而且 3 层的 profiling 没有可收集的数据。</p>
+<p>Java 虚拟机断定该方法对于 C1 代码和 C2 代码的执行效率相同。</p>
+<p>在这种情况下，Java 虚拟机会在 3 层编译之后，直接选择用 1 层的 C1 编译。由于这是一个终止状态，因此 Java 虚拟机不会继续用 4 层的 C2 编译。</p>
+</li>
+<li><p>在 C1 忙碌的情况下，Java 虚拟机在解释执行过程中对程序进行 profiling，而后直接由 4 层的 C2 编译。</p>
+</li>
+<li><p>在 C2 忙碌的情况下，方法会被 2 层的 C1 编译，然后再被 3 层的 C1 编译，以减少方法在 3 层的执行时间。</p>
+</li>
+</ol>
+<p>为何要这样多层编译？其中一个原因是快速地收集profile，所以会用2 3层编译后的代码，既能够高效运行，也能够收集最终用来4层编译的profile</p>
+<p>Java 8 默认开启了分层编译。不管是开启还是关闭分层编译，原本用来选择即时编译器的参数 -client 和 -server 都是无效的。当关闭分层编译的情况下，Java 虚拟机将直接采用 C2。</p>
+<p>如果你希望只是用 C1，那么你可以在打开分层编译的情况下使用参数 -XX:TieredStopAtLevel=1。在这种情况下，Java 虚拟机会在解释执行之后直接由 1 层的 C1 进行编译。</p>
+<h4 id="即时编译的触发"><a href="#即时编译的触发" class="headerlink" title="即时编译的触发"></a>即时编译的触发</h4><p><strong>Java 虚拟机是根据方法的调用次数以及循环回边的执行次数来触发即时编译的。</strong></p>
+<p>前面提到，Java 虚拟机在 0 层、2 层和 3 层执行状态时进行 profiling，其中就包含方法的调用次数和循环回边的执行次数。</p>
+<p>这里的循环回边是一个控制流图中的概念。在字节码中，我们可以简单理解为往回跳转的指令。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">200</span>; i++) &#123;</span><br><span class="line">    sum += i;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//字节码</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">(java.lang.Object)</span></span>;</span><br><span class="line">  Code:</span><br><span class="line">     <span class="number">0</span>: iconst_0</span><br><span class="line">     <span class="number">1</span>: istore_1</span><br><span class="line">     <span class="number">2</span>: iconst_0</span><br><span class="line">     <span class="number">3</span>: istore_2</span><br><span class="line">     <span class="number">4</span>: goto <span class="number">14</span></span><br><span class="line">     <span class="number">7</span>: iload_1</span><br><span class="line">     <span class="number">8</span>: iload_2</span><br><span class="line">     <span class="number">9</span>: iadd</span><br><span class="line">    <span class="number">10</span>: istore_1</span><br><span class="line">    <span class="number">11</span>: iinc <span class="number">2</span>, <span class="number">1</span></span><br><span class="line">    <span class="number">14</span>: iload_2</span><br><span class="line">    <span class="number">15</span>: sipush <span class="number">200</span></span><br><span class="line">    <span class="number">18</span>: if_icmplt <span class="number">7</span></span><br><span class="line">    <span class="number">21</span>: <span class="keyword">return</span></span><br></pre></td></tr></table></figure>
+
+<p>在即时编译过程中，我们会识别循环的头部和尾部。在上面这段字节码中，循环的头部是偏移量为 14 的字节码，尾部为偏移量为 11 的字节码。</p>
+<p>循环尾部到循环头部的控制流边就是真正意义上的循环回边。也就是说，C1 将在这个位置插入增加循环回边计数器的代码。</p>
+<p>解释执行和 C1 代码中增加循环回边计数器的位置并不相同，但这并不会对程序造成影响。</p>
+<p>实际上，Java 虚拟机并不会对这些计数器进行同步操作，因此收集而来的执行次数也并非精确值。不管如何，即时编译的触发并不需要非常精确的数值。只要该数值足够大，就能说明对应的方法包含热点代码。</p>
+<p>具体来说，<strong>在不启用分层编译的情况下</strong>，<strong>当方法的调用次数和循环回边的次数的和</strong>，超过由参数 -XX:CompileThreshold 指定的阈值时（使用 C1 时，该值为 1500；使用 C2 时，该值为 10000），便会触发即时编译。</p>
+<p>当<strong>启用分层编译时</strong>，Java 虚拟机将不再采用由参数 -XX:CompileThreshold 指定的阈值（该参数失效），而是使用另一套阈值系统。在这套系统中，阈值的大小是动态调整的：在比较阈值时，Java 虚拟机会将阈值与某个系数 s 相乘。<strong>该系数与当前待编译的方法数目成正相关，与编译线程的数目成负相关。</strong></p>
+<blockquote>
+<p>系数的计算方法为：<br>s = queue_size_X / (TierXLoadFeedback * compiler_count_X) + 1</p>
+<p>其中 X 是执行层次，可取 3 或者 4；<br>queue_size_X 是执行层次为 X 的待编译方法的数目；<br>TierXLoadFeedback 是预设好的参数，其中 Tier3LoadFeedback 为 5，Tier4LoadFeedback 为 3；<br>compiler_count_X 是层次 X 的编译线程数目。</p>
+</blockquote>
+<p>在 64 位 Java 虚拟机中，<strong>默认情况下编译线程的总数目是根据处理器数量来调整的</strong>（对应参数 -XX:+CICompilerCountPerCPU，默认为 true；当<strong>通过参数 -XX:+CICompilerCount=N 强制设定</strong>总编译线程数目时，CICompilerCountPerCPU 将被设置为 false）。</p>
+<p>Java 虚拟机会将这些编译线程按照 <strong>1:2</strong> 的比例分配给 C1 和 C2（至少各为 1 个）</p>
+<p>当方法<strong>调用次数</strong>大于由参数 -XX:TierXInvocationThreshold 指定的阈值乘以系数，或者当方法调用次数大于由参数 -XX:TierX<strong>MIN</strong>InvocationThreshold (多个MIN)指定的阈值乘以系数，<strong>并且方法调用次数和循环回边次数之和</strong>大于由参数 -XX:TierXCompileThreshold 指定的阈值乘以系数时，便会触发 X 层即时编译。</p>
+<p>触发条件为：<br>i &gt; TierXInvocationThreshold * s || (i &gt; TierXMinInvocationThreshold * s  &amp;&amp; i + b &gt; TierXCompileThreshold * s)</p>
+<h4 id="OSR编译"><a href="#OSR编译" class="headerlink" title="OSR编译"></a>OSR编译</h4><p>可以看到，决定一个方法是否为热点代码的因素有两个：方法的调用次数、循环回边的执行次数。即时编译便是根据这两个计数器的和来触发的。</p>
+<p>除了以<strong>方法为单位的即时编译</strong>之外，Java 虚拟机还存在着另一种<strong>以循环为单位的即时编译</strong>，叫做 <strong>On-Stack-Replacement（OSR）编译。循环回边计数器便是用来触发这种类型的编译的。</strong></p>
+<p>OSR 实际上是一种技术，<strong>它指的是在程序执行过程中，动态地替换掉 Java 方法栈桢</strong>，从而使得程序能够在<strong>非方法入口处</strong>（可能是循环处？）进行解释执行和编译后的代码之间的切换。事实上，去优化（deoptimization）采用的技术也可以称之为 OSR。</p>
+<p>在不启用分层编译的情况下，触发 OSR 编译的阈值是由参数 -XX:CompileThreshold 指定的阈值的倍数。</p>
+<p>CompileThreshold = (OnStackReplacePercentage - InterpreterProfilePercentage)/100</p>
+<p>其中 -XX:InterpreterProfilePercentage 的默认值为 33，当使用 C1 时 -XX:OnStackReplacePercentage 为 933，当使用 C2 时为 140。</p>
+<p>默认情况下，C1 的 OSR 编译的阈值为 13500，而 C2 的为 10700。</p>
+<p><strong>启用分层编译的情况下</strong>，触发 OSR 编译的阈值则是由参数 <strong>-XX:TierXBackEdgeThreshold</strong> 指定的阈值乘以系数。</p>
+<p><strong>即时编译是以方法为单位的。动态编译比较耗时，如果花了大量CPU资源编译出来的机器码运行不了几次，就很浪费了。</strong></p>
+<p><strong>机器码越快，需要的编译时间就越长。分层编译是一种折衷的方式，既能够满足部分不那么热的代码能够在短时间内编译完成，也能满足很热的代码能够拥有最好的优化。</strong></p>
+<h3 id="17-即时编译-下"><a href="#17-即时编译-下" class="headerlink" title="17 即时编译 下"></a>17 即时编译 下</h3><h4 id="Profiling"><a href="#Profiling" class="headerlink" title="Profiling"></a>Profiling</h4><p><strong>分层编译中的 0 层、2 层和 3 层</strong>都会进行 profiling，收集能够反映程序执行状态的数据。其中，最为基础的便是方法的调用次数以及循环回边的执行次数。它们被用于<strong>触发</strong>即时编译。</p>
+<p>此外，0 层和 3 层还会收集用于 4 层 C2 编译的数据，比如说分支跳转字节码的分支 profile（branch profile），包括跳转次数和不跳转次数，以及非私有实例方法调用指令、强制类型转换 checkcast 指令、类型测试 instanceof 指令，和引用类型的数组存储 aastore 指令的类型 profile（receiver type profile）。</p>
+<p><strong>分支 profile 和类型 profile 的收集将给应用程序带来不少的性能开销。</strong>据统计，正是因为这部分额外的 profiling，使得 3 层 C1 代码的性能比 2 层 C1 代码的低 30%。</p>
+<p>在通常情况下，我们不会在解释执行过程中收集分支 profile 以及类型 profile。只有在方法触发 C1 编译后，Java 虚拟机认为该方法有可能被 C2 编译，方才在该方法的 C1 代码中收集这些 profile。只有在比较极端的情况下，例如等待 C1 编译的方法数目太多时，Java 虚拟机才会开始在解释执行过程中收集这些 profile。</p>
+<p>耗费巨大代价收集的profile是为了1. 触发即时编译（调用次数和循环回边执行次数）） 2. C2进行优化所需</p>
+<h4 id="基于分支的profile优化"><a href="#基于分支的profile优化" class="headerlink" title="基于分支的profile优化"></a>基于分支的profile优化</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">foo</span><span class="params">(<span class="keyword">boolean</span> f, <span class="keyword">int</span> in)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> v;</span><br><span class="line">  <span class="keyword">if</span> (f) &#123;</span><br><span class="line">    v = in;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    v = (<span class="keyword">int</span>) Math.sin(in);</span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="keyword">if</span> (v == in) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="keyword">int</span>) Math.cos(v);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 编译而成的字节码：</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">foo</span><span class="params">(<span class="keyword">boolean</span>, <span class="keyword">int</span>)</span></span>;</span><br><span class="line">  Code:</span><br><span class="line">     <span class="number">0</span>: iload_0</span><br><span class="line">     <span class="number">1</span>: ifeq          <span class="number">9</span></span><br><span class="line">     <span class="number">4</span>: iload_1</span><br><span class="line">     <span class="number">5</span>: istore_2</span><br><span class="line">     <span class="number">6</span>: goto          <span class="number">16</span></span><br><span class="line">     <span class="number">9</span>: iload_1</span><br><span class="line">    <span class="number">10</span>: i2d</span><br><span class="line">    <span class="number">11</span>: invokestatic  java/lang/Math.sin:(D)D</span><br><span class="line">    <span class="number">14</span>: d2i</span><br><span class="line">    <span class="number">15</span>: istore_2</span><br><span class="line">    <span class="number">16</span>: iload_2</span><br><span class="line">    <span class="number">17</span>: iload_1</span><br><span class="line">    <span class="number">18</span>: if_icmpne     <span class="number">23</span></span><br><span class="line">    <span class="number">21</span>: iconst_0</span><br><span class="line">    <span class="number">22</span>: ireturn</span><br><span class="line">    <span class="number">23</span>: iload_2</span><br><span class="line">    <span class="number">24</span>: i2d</span><br><span class="line">    <span class="number">25</span>: invokestatic java/lang/Math.cos:(D)D</span><br><span class="line">    <span class="number">28</span>: d2i</span><br><span class="line">    <span class="number">29</span>: ireturn</span><br></pre></td></tr></table></figure>
+
+<p>第一个条件判断将测试所输入的 boolean 值。如果为 true，则将局部变量 v 设置为所输入的 int 值。如果为 false，则将所输入的 int 值经过一番运算之后，再存入局部变量 v 之中。</p>
+<p>第二个条件判断则测试局部变量 v 是否和所输入的 int 值相等。如果相等，则返回 0。如果不等，则将局部变量 v 经过一番运算之后，再将之返回。显然，当所输入的 boolean 值为 true 的情况下，这段代码将返回 0。</p>
+<p>设应用程序调用该方法时，所传入的 boolean 值皆为 true。<strong>那么，偏移量为 1 以及偏移量为 18 的条件跳转指令所对应的分支 profile 中，跳转的次数都为 0。</strong></p>
+<p>C2 可以根据这两个分支 profile 作出假设，在接下来的执行过程中，这两个条件跳转指令仍旧不会发生跳转。基于这个假设，<strong>C2 便不再编译这两个条件跳转语句所对应的 false 分支了。</strong></p>
+<p>经过“剪枝”之后，在第二个条件跳转处，v 的值只有可能为所输入的 int 值。因此，该条件跳转可以进一步被优化掉。<strong>最终的结果是，在第一个条件跳转之后，C2 代码将直接返回 0。</strong></p>
+<p>观察C2编译结果后可以发现确实如此。</p>
+<p>总结：根据条件跳转指令的分支 profile，即时编译器可以将从未执行过的分支剪掉，以避免编译这些很有可能不会用到的代码，从而节省编译时间以及部署代码所要消耗的内存空间。此外，“剪枝”将精简程序的数据流，从而触发更多的优化。</p>
+<p>在现实中，分支 profile 出现仅跳转或者仅不跳转的情况并不多见。当然，即时编译器对分支 profile 的利用也不仅限于“剪枝”。它还会根据分支 profile，<strong>计算每一条程序执行路径的概率</strong>，<strong>以便某些编译器优化优先处理概率较高的路径。</strong></p>
+<h4 id="基于类型profile的优化"><a href="#基于类型profile的优化" class="headerlink" title="基于类型profile的优化"></a>基于类型profile的优化</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object in)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (in <span class="keyword">instanceof</span> Exception) &#123;</span><br><span class="line">    <span class="keyword">return</span> System.identityHashCode(in);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> in.hashCode();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//测试所传入的对象是否为 Exception 的实例，如果是，则返回它的系统哈希值；如果不是，则返回它的哈希值。</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//字节码</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(java.lang.Object)</span></span>;</span><br><span class="line">  Code:</span><br><span class="line">     <span class="number">0</span>: aload_0</span><br><span class="line">     <span class="number">1</span>: <span class="keyword">instanceof</span> java/lang/Exception</span><br><span class="line">     <span class="number">4</span>: ifeq          <span class="number">12</span></span><br><span class="line">     <span class="number">7</span>: aload_0</span><br><span class="line">     <span class="number">8</span>: invokestatic java/lang/System.identityHashCode:(Ljava/lang/Object;)I</span><br><span class="line">    <span class="number">11</span>: ireturn</span><br><span class="line">    <span class="number">12</span>: aload_0</span><br><span class="line">    <span class="number">13</span>: invokevirtual java/lang/Object.hashCode:()I</span><br><span class="line">    <span class="number">16</span>: ireturn</span><br></pre></td></tr></table></figure>
+
+<p>如果所传入的Object全部不是Integer，则偏移量为 1 的 instanceof 指令的类型 profile 仅包含 Integer，偏移量为 4 的分支跳转语句的分支 profile 中不跳转的次数为 0，偏移量为 13 的方法调用指令的类型 profile 仅包含 Integer。</p>
+<p>对于instanceof</p>
+<ul>
+<li><p>如果 instanceof 的目标类型是 final 类型，那么 Java 虚拟机仅需比较测试对象的动态类型是否为该 final 类型。（对象的对象头存有该对象的动态类型。因此，获取对象的动态类型仅为单一的内存读指令。）</p>
+</li>
+<li><p>如果目标类型不是 final 类型，比如说我们例子中的 Exception，那么 Java 虚拟机需要从测试对象的动态类型开始，依次测试该类，该类的父类、祖先类，该类所直接实现或者间接实现的接口是否与目标类型一致。</p>
+</li>
+</ul>
+<p>在我们的例子中，instanceof 指令的类型 profile 仅包含 Integer。根据这个信息，即时编译器可以假设，在接下来的执行过程中，所输入的 Object 对象仍为 Integer 实例。</p>
+<p>因此，生成的代码将测试所输入的对象的动态类型是否为 Integer<strong>。如果是的话，则继续执行接下来的代码。</strong>（该优化源自 Graal，采用 C2 可能无法复现。）</p>
+<p>然后，即时编译器会采用和第一个例子中一致的<strong>针对分支 profile 的优化</strong>，以及对方法调用的条件去虚化内联。</p>
+<p><img src="/2021/05/17/JVM/image-20210530113828061.png" alt="image-20210530113828061"></p>
+<p>变为</p>
+<p><img src="/2021/05/17/JVM/image-20210530113852904.png" alt="image-20210530113852904"></p>
+<p>那假设失败怎么办？</p>
+<h4 id="去优化"><a href="#去优化" class="headerlink" title="去优化"></a>去优化</h4><p>将即时编译生成的机器码切换回解释执行。</p>
+<p>在生成的机器码中，即时编译器将在假设失败的位置上插入一个陷阱（trap）。该陷阱实际上是一条 call 指令，调用至 Java 虚拟机里专门负责去优化的方法。<strong>与普通的 call 指令不一样的是，去优化方法将更改栈上的返回地址，并不再返回即时编译器生成的机器码中</strong>。</p>
+<p>上面的红色方框问号就是陷阱。</p>
+<p>在去优化的过程中，需要将当前机器码的执行状态转换至某一字节码之前的执行状态，并从该字节码开始执行<strong>。这便要求即时编译器在编译过程中记录好这两种执行状态的映射。</strong></p>
+<p>举例来说，经过逃逸分析之后，机器码可能并没有实际分配对象，而是在各个寄存器中存储该对象的各个字段（标量替换，具体我会在之后的篇章中进行介绍）。<strong>在去优化过程中，Java 虚拟机需要还原出这个对象，以便解释执行时能够使用该对象</strong>。</p>
+<p>此外，在调用 Java 虚拟机的去优化方法时，即时编译器生成的机器码可以根据产生去优化的原因来决定是否保留这一份机器码，以及何时重新编译对应的 Java 方法。</p>
+<p><strong>如果去优化的原因与优化无关</strong>，即使重新编译也不会改变生成的机器码，那么生成的机器码可以在调用去优化方法时传入 Action_None，表示保留这一份机器码，在下一次调用该方法时重新进入这一份机器码。</p>
+<p><strong>如果去优化的原因与静态分析的结果有关，例如类层次分析</strong>，那么生成的机器码可以在调用去优化方法时传入 Action_Recompile，表示不保留这一份机器码，但是可以不经过重新 profile，直接重新编译。</p>
+<p><strong>如果去优化的原因与基于 profile 的激进优化有关</strong>，那么生成的机器码需要在调用去优化方法时传入 Action_Reinterpret，表示不保留这一份机器码，而且需要重新收集程序的 profile。这是因为基于 profile 的优化失败的时候，<strong>往往代表这程序的执行状态发生改变</strong>，因此需要更正已收集的 profile，以更好地反映新的程序执行状态。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+          
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
+            <a href="/tags/JVM/" rel="tag"># JVM</a>
+          
+            <a href="/tags/Java%E8%99%9A%E6%8B%9F%E6%9C%BA/" rel="tag"># Java虚拟机</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/05/17/%E7%BB%84%E6%88%90/" rel="next" title="组成">
+                <i class="fa fa-chevron-left"></i> 组成
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/05/19/Trie-%E6%9C%80%E5%A4%A7%E5%BC%82%E6%88%96%E5%AF%B9/" rel="prev" title="Trie_最大异或对">
+                Trie_最大异或对 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.jpg"
+                alt="" />
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#JVM"><span class="nav-number">1.</span> <span class="nav-text">JVM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#JVM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">JVM基本原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-java%E4%BB%A3%E7%A0%81%E6%98%AF%E6%80%8E%E6%A0%B7%E8%BF%90%E8%A1%8C%E7%9A%84"><span class="nav-number">1.1.1.</span> <span class="nav-text">1. java代码是怎样运行的</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E5%95%A5%E8%A6%81%E8%99%9A%E6%8B%9F%E6%9C%BA"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">为啥要虚拟机</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%A6%82%E4%BD%95%E8%BF%90%E8%A1%8C"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">具体如何运行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#jvm%E7%9A%84%E8%BF%90%E8%A1%8C%E6%95%88%E7%8E%87"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">jvm的运行效率</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#java%E5%9F%BA%E6%9C%AC%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.2.</span> <span class="nav-text">java基本类型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#jvm%E4%B8%AD%E7%9A%84boolean%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">jvm中的boolean类型</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-JVM%E6%98%AF%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E7%9A%84%E2%80%941"><span class="nav-number">1.1.3.</span> <span class="nav-text">4 JVM是如何执行方法调用的—1</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E8%BD%BD%E5%92%8C%E9%87%8D%E5%86%99"><span class="nav-number">1.1.3.1.</span> <span class="nav-text">重载和重写</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%87%8D%E8%BD%BD"><span class="nav-number">1.1.3.1.1.</span> <span class="nav-text">重载</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%87%8D%E5%86%99"><span class="nav-number">1.1.3.1.2.</span> <span class="nav-text">重写</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E7%BB%91%E5%AE%9A%E5%92%8C%E5%8A%A8%E6%80%81%E7%BB%91%E5%AE%9A"><span class="nav-number">1.1.3.2.</span> <span class="nav-text">静态绑定和动态绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A1%A5%E6%8E%A5"><span class="nav-number">1.1.3.2.1.</span> <span class="nav-text">桥接</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E6%8C%87%E4%BB%A4%E7%9A%84%E7%AC%A6%E5%8F%B7%E5%BC%95%E7%94%A8"><span class="nav-number">1.1.3.3.</span> <span class="nav-text">调用指令的符号引用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-JVM%E6%98%AF%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E7%9A%84%E2%80%942"><span class="nav-number">1.1.4.</span> <span class="nav-text">5 JVM是如何执行方法调用的—2</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E8%A1%A8"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">方法表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E8%81%94%E7%BC%93%E5%AD%98"><span class="nav-number">1.1.4.2.</span> <span class="nav-text">内联缓存</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-JVM%E6%98%AF%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%BC%82%E5%B8%B8%E7%9A%84"><span class="nav-number">1.1.5.</span> <span class="nav-text">6 JVM是如何处理异常的</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8"><span class="nav-number">1.1.5.1.</span> <span class="nav-text">异常</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%8D%95%E8%8E%B7"><span class="nav-number">1.1.5.2.</span> <span class="nav-text">如何捕获</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java7%E7%9A%84Supressed%E5%BC%82%E5%B8%B8%E5%92%8C%E8%AF%AD%E6%B3%95%E7%B3%96"><span class="nav-number">1.1.5.3.</span> <span class="nav-text">Java7的Supressed异常和语法糖</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-JVM%E6%98%AF%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%8F%8D%E5%B0%84%E7%9A%84"><span class="nav-number">1.1.6.</span> <span class="nav-text">7 JVM是如何实现反射的</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8D%E5%B0%84"><span class="nav-number">1.1.6.1.</span> <span class="nav-text">反射</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Method-invoke%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.1.7.</span> <span class="nav-text">Method.invoke的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8F%8D%E5%B0%84%E8%B0%83%E7%94%A8%E8%BF%98%E8%A6%81%E9%87%87%E5%8F%96%E5%A7%94%E6%B4%BE%E5%AE%9E%E7%8E%B0%E4%BD%9C%E4%B8%BA%E4%B8%AD%E9%97%B4%E5%B1%82%EF%BC%9F"><span class="nav-number">1.1.7.0.1.</span> <span class="nav-text">为什么反射调用还要采取委派实现作为中间层？</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8D%E5%B0%84%E7%9A%84%E5%BC%80%E9%94%80"><span class="nav-number">1.1.7.1.</span> <span class="nav-text">反射的开销</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E%E8%A3%85%E7%AE%B1"><span class="nav-number">1.1.7.1.1.</span> <span class="nav-text">关于装箱</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%B3%E4%BA%8EObject%E6%95%B0%E7%BB%84"><span class="nav-number">1.1.7.1.2.</span> <span class="nav-text">关于Object数组</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%8D%E5%8A%A0%E9%80%9F%EF%BC%9F"><span class="nav-number">1.1.7.1.3.</span> <span class="nav-text">再加速？</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-JVM%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0invokedynamic%E7%9A%84%EF%BC%9F%EF%BC%88%E4%B8%8A%EF%BC%89"><span class="nav-number">1.1.8.</span> <span class="nav-text">8 JVM是怎么实现invokedynamic的？（上）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#9-JVM%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0invokedynamic%E7%9A%84%EF%BC%9F%EF%BC%88%E4%B8%8B%EF%BC%89"><span class="nav-number">1.1.9.</span> <span class="nav-text">9 JVM是怎么实现invokedynamic的？（下）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#10-%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-number">1.1.10.</span> <span class="nav-text">10 对象的内存布局</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9%E6%8C%87%E9%92%88"><span class="nav-number">1.1.10.1.</span> <span class="nav-text">压缩指针</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%97%E6%AE%B5%E9%87%8D%E6%8E%92%E5%88%97"><span class="nav-number">1.1.10.2.</span> <span class="nav-text">字段重排列</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#11-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6-%E4%B8%8A"><span class="nav-number">1.1.11.</span> <span class="nav-text">11 垃圾回收 上</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0%E6%B3%95%E5%92%8C%E5%8F%AF%E8%BE%BE%E6%80%A7%E5%88%86%E6%9E%90"><span class="nav-number">1.1.11.1.</span> <span class="nav-text">引用计数法和可达性分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GC-Roots"><span class="nav-number">1.1.11.2.</span> <span class="nav-text">GC Roots</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Stop-the-world-%E4%BB%A5%E5%8F%8A%E5%AE%89%E5%85%A8%E7%82%B9"><span class="nav-number">1.1.11.3.</span> <span class="nav-text">Stop-the-world 以及安全点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F"><span class="nav-number">1.1.11.4.</span> <span class="nav-text">垃圾回收的三种方式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#12-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6-%E4%B8%8B"><span class="nav-number">1.1.12.</span> <span class="nav-text">12 垃圾回收 下</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#13-Java%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.13.</span> <span class="nav-text">13 Java内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1"><span class="nav-number">1.1.13.1.</span> <span class="nav-text">1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2"><span class="nav-number">1.1.13.2.</span> <span class="nav-text">2</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E5%92%8Chappens-before%E5%85%B3%E7%B3%BB"><span class="nav-number">1.1.13.3.</span> <span class="nav-text">Java内存模型和happens-before关系</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%EF%BC%8Cvolatile-%E5%AD%97%E6%AE%B5%EF%BC%8Cfinal-%E5%AD%97%E6%AE%B5%E4%B8%8E%E5%AE%89%E5%85%A8%E5%8F%91%E5%B8%83"><span class="nav-number">1.1.13.4.</span> <span class="nav-text">锁，volatile 字段，final 字段与安全发布</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#14-JVM%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0synchronized"><span class="nav-number">1.1.14.</span> <span class="nav-text">14 JVM如何实现synchronized</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#15-Java%E8%AF%AD%E6%B3%95%E7%B3%96%E5%92%8CJava%E7%BC%96%E8%BE%91%E5%99%A8"><span class="nav-number">1.1.15.</span> <span class="nav-text">15 Java语法糖和Java编辑器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#auto-boxing-amp-auto-unboxing"><span class="nav-number">1.1.15.1.</span> <span class="nav-text">auto-boxing &amp; auto-unboxing</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%9B%E5%9E%8B%E4%B8%8E%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4"><span class="nav-number">1.1.15.2.</span> <span class="nav-text">泛型与类型擦除</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A1%A5%E6%8E%A5%E6%96%B9%E6%B3%95"><span class="nav-number">1.1.15.3.</span> <span class="nav-text">桥接方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Iterable"><span class="nav-number">1.1.15.4.</span> <span class="nav-text">Iterable</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#switch"><span class="nav-number">1.1.15.5.</span> <span class="nav-text">switch</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B3%E6%97%B6%E7%BC%96%E8%AF%91-%E4%B8%8A"><span class="nav-number">1.1.16.</span> <span class="nav-text">即时编译 上</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B1%82%E7%BC%96%E8%AF%91%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.1.16.1.</span> <span class="nav-text">分层编译模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%B3%E6%97%B6%E7%BC%96%E8%AF%91%E7%9A%84%E8%A7%A6%E5%8F%91"><span class="nav-number">1.1.16.2.</span> <span class="nav-text">即时编译的触发</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#OSR%E7%BC%96%E8%AF%91"><span class="nav-number">1.1.16.3.</span> <span class="nav-text">OSR编译</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#17-%E5%8D%B3%E6%97%B6%E7%BC%96%E8%AF%91-%E4%B8%8B"><span class="nav-number">1.1.17.</span> <span class="nav-text">17 即时编译 下</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Profiling"><span class="nav-number">1.1.17.1.</span> <span class="nav-text">Profiling</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%88%86%E6%94%AF%E7%9A%84profile%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.17.2.</span> <span class="nav-text">基于分支的profile优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%B1%BB%E5%9E%8Bprofile%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.17.3.</span> <span class="nav-text">基于类型profile的优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%BB%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.17.4.</span> <span class="nav-text">去优化</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">XSY</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.bootcss.com/mathjax/2.7.1/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+
+
+  
+
+  
+
+  
+  
+   <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;" ></canvas> 
+   <script type="text/javascript" src="//cdn.bootcss.com/animejs/2.2.0/anime.min.js"></script> 
+   <script type="text/javascript" src="/js/src/fireworks.js"></script>
+
+
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginModelPath":"assets/","model":{"jsonPath":"/live2dw/assets/haru01.model.json"},"display":{"position":"left","width":200,"height":400,"hOffset":0,"vOffset":0},"mobile":{"show":true},"rect":"opacity:0.7","log":false,"pluginJsPath":"lib/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+</html>
